@@ -1,0 +1,125 @@
+-- 🔄 Borrar base de datos si existe
+DROP DATABASE IF EXISTS transportes;
+
+-- 🛠 Crear base de datos
+CREATE DATABASE transportes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 📦 Usar la base de datos
+USE transportes;
+
+-- 🧑‍💼 Tabla de usuarios (clientes)
+CREATE TABLE usuarios (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  apellidos VARCHAR(100) NOT NULL,
+  telefono VARCHAR(20) UNIQUE NOT NULL,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  genero VARCHAR(20) NOT NULL,
+  estado ENUM('activo', 'bloqueado') DEFAULT 'activo',
+  favorito BOOLEAN DEFAULT 0,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 🧑‍💼 Tabla de administradores
+CREATE TABLE administradores (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  rol ENUM('administrador_general', 'conductor', 'secretario') NOT NULL,
+  estado ENUM('activo', 'bloqueado') DEFAULT 'activo',
+  favorito BOOLEAN DEFAULT 0,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 🚐 Plantillas de unidades
+CREATE TABLE plantillas_unidad (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  tipo ENUM('combi', 'autobus', 'otro') NOT NULL,
+  total_asientos INT NOT NULL,
+  descripcion TEXT,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 🧩 Estructura de asientos
+CREATE TABLE estructura_asientos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  plantilla_id INT NOT NULL,
+  fila INT NOT NULL,
+  col INT NOT NULL,
+  tipo ENUM('asiento', 'pasillo', 'conductor') NOT NULL,
+  numero VARCHAR(10),
+  FOREIGN KEY (plantilla_id) REFERENCES plantillas_unidad(id) ON DELETE CASCADE
+);
+
+-- 🗺 Plantillas de paradas
+CREATE TABLE plantillas_parada (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  lista JSON NOT NULL,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 🚏 Paradas individuales
+CREATE TABLE paradas_extra (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 📆 Viajes
+CREATE TABLE viajes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  origen VARCHAR(100) NOT NULL,
+  destino VARCHAR(100) NOT NULL,
+  fecha DATE NOT NULL,
+  hora TIME NOT NULL,
+  precio DECIMAL(10,2) NOT NULL,
+  estado ENUM('disponible', 'finalizado', 'cancelado') DEFAULT 'disponible',
+  id_parada_subida INT DEFAULT NULL,
+  id_parada_bajada INT DEFAULT NULL,
+  id_conductor INT DEFAULT NULL,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  finalizado_en TIMESTAMP NULL,
+  FOREIGN KEY (id_parada_subida) REFERENCES plantillas_parada(id),
+  FOREIGN KEY (id_parada_bajada) REFERENCES plantillas_parada(id),
+  FOREIGN KEY (id_conductor) REFERENCES administradores(id)
+);
+
+-- 🚐 Unidades asignadas
+CREATE TABLE unidades_viaje (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_viaje INT NOT NULL,
+  id_plantilla INT NOT NULL,
+  numero_unidad INT NOT NULL,
+  FOREIGN KEY (id_viaje) REFERENCES viajes(id) ON DELETE CASCADE,
+  FOREIGN KEY (id_plantilla) REFERENCES plantillas_unidad(id)
+);
+
+-- 🪑 Reservas
+CREATE TABLE reservas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_usuario INT NOT NULL,
+  id_unidad_viaje INT NOT NULL,
+  asiento VARCHAR(10) NOT NULL,
+  nombre_viajero VARCHAR(100) NOT NULL,
+  telefono_viajero VARCHAR(20),
+  sube_en_terminal BOOLEAN DEFAULT TRUE,
+  id_parada_extra INT DEFAULT NULL,
+  estado ENUM('pendiente', 'confirmada', 'rechazada') DEFAULT 'pendiente',
+  reservado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE,
+  FOREIGN KEY (id_unidad_viaje) REFERENCES unidades_viaje(id) ON DELETE CASCADE,
+  FOREIGN KEY (id_parada_extra) REFERENCES plantillas_parada(id),
+  UNIQUE KEY unique_asiento_por_viaje (id_unidad_viaje, asiento)
+);
+
+
+--Tabla de lugares de destino
+CREATE TABLE lugares (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
