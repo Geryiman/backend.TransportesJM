@@ -1,13 +1,13 @@
--- 🔄 Borrar base de datos si existe
+--  Borrar base de datos si existe
 DROP DATABASE IF EXISTS transportes;
 
--- 🛠 Crear base de datos
+--  Crear base de datos
 CREATE DATABASE transportes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- 📦 Usar la base de datos
+--  Usar la base de datos
 USE transportes;
 
--- 🧑‍💼 Tabla de usuarios (clientes)
+-- Tabla de usuarios (clientes)
 CREATE TABLE usuarios (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE usuarios (
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 🧑‍💼 Tabla de administradores
+-- Tabla de administradores
 CREATE TABLE administradores (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE plantillas_unidad (
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 🧩 Estructura de asientos
+-- Estructura de asientos
 CREATE TABLE estructura_asientos (
   id INT AUTO_INCREMENT PRIMARY KEY,
   plantilla_id INT NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE estructura_asientos (
   FOREIGN KEY (plantilla_id) REFERENCES plantillas_unidad(id) ON DELETE CASCADE
 );
 
--- 🗺 Plantillas de paradas
+--  Plantillas de paradas
 CREATE TABLE plantillas_parada (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
@@ -62,14 +62,14 @@ CREATE TABLE plantillas_parada (
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 🚏 Paradas individuales
+--  Paradas individuales
 CREATE TABLE paradas_extra (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 📆 Viajes
+--  Viajes
 CREATE TABLE viajes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   origen VARCHAR(100) NOT NULL,
@@ -88,7 +88,7 @@ CREATE TABLE viajes (
   FOREIGN KEY (id_conductor) REFERENCES administradores(id)
 );
 
--- 🚐 Unidades asignadas
+-- Unidades asignadas
 CREATE TABLE unidades_viaje (
   id INT AUTO_INCREMENT PRIMARY KEY,
   id_viaje INT NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE unidades_viaje (
   FOREIGN KEY (id_plantilla) REFERENCES plantillas_unidad(id)
 );
 
--- 🪑 Reservas
+--  Reservas
 CREATE TABLE reservas (
   id INT AUTO_INCREMENT PRIMARY KEY,
   id_usuario INT NOT NULL,
