@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 const dbConfig = {
   host: 'localhost',
   user: 'root',
-  password: '', // ajusta tu contraseña si es diferente
+  password: '2361084505Germ@n',
   database: 'transportes',
 };
 
