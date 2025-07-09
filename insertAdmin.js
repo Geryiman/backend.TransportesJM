@@ -3,9 +3,9 @@ const bcrypt = require('bcrypt');
 
 // Configuración de tu base de datos
 const dbConfig = {
-  host: 'localhost',
-  user: 'root',
-  password: '2361084505Germ@n',
+  host: '127.0.0.1',
+  user: 'german',
+  password: '2361084505ger',
   database: 'transportes',
 };
 
