@@ -11,5 +11,8 @@ router.delete('/:id', paradasController.eliminarParada);
 router.get('/lugares', paradasController.getLugares);
 router.post('/lugares', paradasController.addLugar);
 router.delete('/lugares/:id', paradasController.deleteLugar);
+router.put('/:id', paradasController.editarParada);
+
+
 
 module.exports = router;

@@ -54,11 +54,60 @@ exports.crearParada = (req, res) => {
 // Eliminar una plantilla de paradas
 exports.eliminarParada = (req, res) => {
   const id = req.params.id;
-  db.query('DELETE FROM plantillas_parada WHERE id = ?', [id], (err, result) => {
-    if (err) return res.status(500).json({ error: 'Error al eliminar plantilla' });
-    res.json({ message: 'Plantilla eliminada' });
+
+  // Verificar si la plantilla está siendo usada en 'viajes'
+  const sqlVerificar = `
+    SELECT COUNT(*) AS total FROM viajes
+    WHERE id_parada_subida = ? OR id_parada_bajada = ?
+  `;
+
+  db.query(sqlVerificar, [id, id], (err, result) => {
+    if (err) {
+      console.error('❌ Error al verificar uso de la plantilla:', err);
+      return res.status(500).json({ error: 'Error al verificar uso de la plantilla' });
+    }
+
+    const totalUsos = result[0].total;
+    if (totalUsos > 0) {
+      return res.status(400).json({
+        error: 'La plantilla está vinculada a uno o más viajes y no se puede eliminar.',
+        sugerencia: '¿Prefieres editarla o desvincularla antes de eliminarla?'
+      });
+    }
+
+    // Si no está siendo usada, procedemos a eliminarla
+    db.query('DELETE FROM plantillas_parada WHERE id = ?', [id], (err, result) => {
+      if (err) {
+        console.error('❌ Error al eliminar plantilla:', err);
+        return res.status(500).json({ error: 'Error al eliminar plantilla', detalle: err.message });
+      }
+
+      res.json({ message: 'Plantilla eliminada correctamente' });
+    });
   });
 };
+
+// Editar una plantilla de paradas
+exports.editarParada = (req, res) => {
+  const { id } = req.params;
+  const { nombre, lista } = req.body;
+
+  if (!nombre || !lista || !Array.isArray(lista)) {
+    return res.status(400).json({ error: 'Datos inválidos para actualizar' });
+  }
+
+  const sql = 'UPDATE plantillas_parada SET nombre = ?, lista = ? WHERE id = ?';
+  db.query(sql, [nombre.trim(), JSON.stringify(lista), id], (err, result) => {
+    if (err) {
+      console.error('❌ Error al editar plantilla:', err);
+      return res.status(500).json({ error: 'Error al editar plantilla' });
+    }
+
+    res.json({ message: 'Plantilla actualizada correctamente' });
+  });
+};
+
+
 
 // Obtener todos los lugares
 exports.getLugares = (req, res) => {
