@@ -77,7 +77,7 @@ exports.crearPlantillaParada = (req, res) => {
   });
 };
 
-// 🚌 Crear un nuevo viaje
+// Crear un nuevo viaje
 exports.crearViaje = (req, res) => {
   const {
     origen,
@@ -85,47 +85,49 @@ exports.crearViaje = (req, res) => {
     fecha,
     hora,
     precio,
-    id_plantilla_unidad,
-    numero_unidades,
+    unidades, // array de { id_plantilla, id_conductor }
     id_parada_subida,
-    id_parada_bajada,
-    id_conductor
+    id_parada_bajada
   } = req.body;
 
-  if (!origen || !destino || !fecha || !hora || !precio || !id_plantilla_unidad || !numero_unidades) {
-    return res.status(400).json({ error: 'Faltan datos obligatorios' });
+  if (!origen || !destino || !fecha || !hora || !precio || !unidades || unidades.length === 0) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
 
-  const insertViaje = `
-    INSERT INTO viajes (origen, destino, fecha, hora, precio, id_parada_subida, id_parada_bajada, id_conductor)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  const sqlViaje = `
+    INSERT INTO viajes (origen, destino, fecha, hora, precio, id_parada_subida, id_parada_bajada)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.query(
-    insertViaje,
-    [origen, destino, fecha, hora, precio, id_parada_subida || null, id_parada_bajada || null, id_conductor || null],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: 'Error al crear el viaje' });
+  const valuesViaje = [origen, destino, fecha, hora, precio, id_parada_subida || null, id_parada_bajada || null];
 
-      const idViaje = result.insertId;
-      const unidades = [];
+  db.query(sqlViaje, valuesViaje, (err, result) => {
+    if (err) {
+      console.error('❌ Error al crear viaje:', err);
+      return res.status(500).json({ error: 'Error al crear el viaje' });
+    }
 
-      for (let i = 1; i <= numero_unidades; i++) {
-        unidades.push([idViaje, id_plantilla_unidad, i]);
+    const id_viaje = result.insertId;
+
+    // Crear unidades asociadas al viaje
+    const sqlUnidad = `
+      INSERT INTO unidades_viaje (id_viaje, id_plantilla, id_conductor)
+      VALUES ?
+    `;
+
+    const valuesUnidades = unidades.map(u => [id_viaje, u.id_plantilla, u.id_conductor]);
+
+    db.query(sqlUnidad, [valuesUnidades], (err2) => {
+      if (err2) {
+        console.error('❌ Error al asignar unidades:', err2);
+        return res.status(500).json({ error: 'Error al guardar unidades del viaje' });
       }
 
-      const insertUnidades = `
-        INSERT INTO unidades_viaje (id_viaje, id_plantilla, numero_unidad)
-        VALUES ?
-      `;
-
-      db.query(insertUnidades, [unidades], (err2) => {
-        if (err2) return res.status(500).json({ error: 'Error al registrar las unidades del viaje' });
-        res.json({ message: 'Viaje creado correctamente', idViaje });
-      });
-    }
-  );
+      res.json({ message: '✅ Viaje y unidades creados correctamente' });
+    });
+  });
 };
+
 
 // Obtener todas las plantillas con su ID y nombre
 exports.listarPlantillasUnidad = (req, res) => {
