@@ -1,20 +1,22 @@
 const db = require('../config/db');
 
 // Obtener todas las plantillas de paradas
-exports.getParadas = (req, res) => {
-  const sql = 'SELECT * FROM plantillas_parada ORDER BY id DESC';
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ error: 'Error al obtener plantillas' });
+const plantillas = results.map(row => {
+  let listaParseada = [];
 
-    const plantillas = results.map(row => ({
-      id: row.id,
-      nombre: row.nombre,
-      lista: JSON.parse(row.lista)
-    }));
+  try {
+    listaParseada = JSON.parse(row.lista);
+  } catch (err) {
+    listaParseada = row.lista?.split(',') || [];
+  }
 
-    res.json(plantillas);
-  });
-};
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    lista: listaParseada
+  };
+});
+
 
 // Crear una nueva plantilla de paradas
 exports.crearParada = (req, res) => {
