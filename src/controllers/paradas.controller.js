@@ -3,14 +3,35 @@ const db = require('../config/db');
 // Obtener todas las plantillas de paradas
 exports.getParadas = (req, res) => {
   const sql = 'SELECT * FROM plantillas_parada ORDER BY id DESC';
+
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: 'Error al obtener plantillas' });
 
-    const plantillas = results.map(row => ({
-      id: row.id,
-      nombre: row.nombre,
-      lista: JSON.parse(row.lista)
-    }));
+    const plantillas = results.map(row => {
+      let listaParseada = [];
+
+      try {
+        if (typeof row.lista === 'string') {
+          if (row.lista.trim().startsWith('[')) {
+            // JSON válido
+            listaParseada = JSON.parse(row.lista);
+          } else {
+            // Texto plano separado por comas
+            listaParseada = row.lista.split(',').map(p => p.trim());
+          }
+        } else if (Array.isArray(row.lista)) {
+          listaParseada = row.lista;
+        }
+      } catch {
+        listaParseada = [];
+      }
+
+      return {
+        id: row.id,
+        nombre: row.nombre,
+        lista: listaParseada
+      };
+    });
 
     res.json(plantillas);
   });
@@ -39,7 +60,7 @@ exports.eliminarParada = (req, res) => {
   });
 };
 
-// GET /api/lugares
+// Obtener todos los lugares
 exports.getLugares = (req, res) => {
   db.query('SELECT * FROM lugares ORDER BY nombre', (err, results) => {
     if (err) return res.status(500).json({ error: 'Error al obtener lugares' });
@@ -47,17 +68,18 @@ exports.getLugares = (req, res) => {
   });
 };
 
-// POST /api/lugares
+// Agregar nuevo lugar
 exports.addLugar = (req, res) => {
   const { nombre } = req.body;
   if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
+
   db.query('INSERT INTO lugares (nombre) VALUES (?)', [nombre], (err) => {
     if (err) return res.status(500).json({ error: 'Error al agregar lugar' });
     res.json({ message: 'Lugar agregado correctamente' });
   });
 };
 
-// DELETE /api/lugares/:id
+// Eliminar lugar por ID
 exports.deleteLugar = (req, res) => {
   const id = req.params.id;
   db.query('DELETE FROM lugares WHERE id = ?', [id], (err) => {
