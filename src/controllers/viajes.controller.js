@@ -76,7 +76,6 @@ exports.crearPlantillaParada = (req, res) => {
     res.json({ message: 'Plantilla de parada creada correctamente', id: result.insertId });
   });
 };
-
 // Crear un nuevo viaje
 exports.crearViaje = (req, res) => {
   const {
@@ -85,7 +84,7 @@ exports.crearViaje = (req, res) => {
     fecha,
     hora,
     precio,
-    unidades, // array de { id_plantilla, id_conductor }
+    unidades, // array de { id_plantilla, id_conductor, numero_unidad }
     id_parada_subida,
     id_parada_bajada
   } = req.body;
@@ -109,13 +108,18 @@ exports.crearViaje = (req, res) => {
 
     const id_viaje = result.insertId;
 
-    // Crear unidades asociadas al viaje
+    // Crear unidades asociadas al viaje (con numero_unidad)
     const sqlUnidad = `
-      INSERT INTO unidades_viaje (id_viaje, id_plantilla, id_conductor)
+      INSERT INTO unidades_viaje (id_viaje, id_plantilla, id_conductor, numero_unidad)
       VALUES ?
     `;
 
-    const valuesUnidades = unidades.map(u => [id_viaje, u.id_plantilla, u.id_conductor]);
+    const valuesUnidades = unidades.map((u, i) => [
+      id_viaje,
+      u.id_plantilla,
+      u.id_conductor,
+      u.numero_unidad || i + 1 // valor por defecto si no lo envía el frontend
+    ]);
 
     db.query(sqlUnidad, [valuesUnidades], (err2) => {
       if (err2) {
