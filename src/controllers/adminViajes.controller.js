@@ -1,19 +1,29 @@
 const db = require('../config/db');
 
+// Obtener todos los viajes ordenados (más próximos primero)
 exports.obtenerTodosLosViajes = (req, res) => {
   const sql = `
     SELECT 
       v.id, v.origen, v.destino, v.fecha, v.hora, v.precio, v.estado,
-      a.nombre AS nombre_conductor,
-      (SELECT COUNT(*) FROM unidades_viaje uv WHERE uv.id_viaje = v.id) AS total_unidades
+      (
+        SELECT a.nombre
+        FROM unidades_viaje uv
+        JOIN administradores a ON uv.id_conductor = a.id
+        WHERE uv.id_viaje = v.id
+        LIMIT 1
+      ) AS nombre_conductor,
+      (
+        SELECT COUNT(*) 
+        FROM unidades_viaje uv 
+        WHERE uv.id_viaje = v.id
+      ) AS total_unidades
     FROM viajes v
-    LEFT JOIN administradores a ON v.id_conductor = a.id
     ORDER BY 
       CASE 
         WHEN CONCAT(v.fecha, ' ', v.hora) >= NOW() THEN 0 
         ELSE 1 
       END,
-      v.fecha ASC, v.hora ASC
+      v.fecha ASC, v.hora ASC;
   `;
 
   db.query(sql, (err, resultados) => {
@@ -25,8 +35,7 @@ exports.obtenerTodosLosViajes = (req, res) => {
   });
 };
 
-
-
+// Obtener detalle de un viaje (plantillas, unidades, pasajeros)
 exports.obtenerDetalleViaje = (req, res) => {
   const idViaje = req.params.id;
 
@@ -54,14 +63,12 @@ exports.obtenerDetalleViaje = (req, res) => {
     ORDER BY uv.numero_unidad, r.asiento
   `;
 
-
   db.query(sql, [idViaje], (err, resultados) => {
     if (err) {
       console.error('❌ Error al obtener detalles del viaje:', err);
       return res.status(500).json({ error: 'Error al obtener detalles del viaje' });
     }
 
-    // Agrupar por unidad
     const unidades = {};
     resultados.forEach(r => {
       const key = r.numero_unidad;
