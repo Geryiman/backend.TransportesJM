@@ -1,8 +1,10 @@
 const db = require('../config/db');
 
-// Obtener todos los viajes ordenados (más próximos primero)
+// Obtener todos los viajes (con filtro por estado opcional)
 exports.obtenerTodosLosViajes = (req, res) => {
-  const sql = `
+  const { estado } = req.query;
+
+  let sql = `
     SELECT 
       v.id, v.origen, v.destino, v.fecha, v.hora, v.precio, v.estado,
       (
@@ -18,15 +20,28 @@ exports.obtenerTodosLosViajes = (req, res) => {
         WHERE uv.id_viaje = v.id
       ) AS total_unidades
     FROM viajes v
+    WHERE 1 = 1
+  `;
+
+  const values = [];
+
+  // Aplica el filtro por estado solo si viene en la query y no es "todos"
+  if (estado && estado !== 'todos') {
+    sql += ` AND v.estado = ?`;
+    values.push(estado);
+  }
+
+  // Ordenar: primero los más próximos
+  sql += `
     ORDER BY 
       CASE 
         WHEN CONCAT(v.fecha, ' ', v.hora) >= NOW() THEN 0 
         ELSE 1 
       END,
-      v.fecha ASC, v.hora ASC;
+      v.fecha ASC, v.hora ASC
   `;
 
-  db.query(sql, (err, resultados) => {
+  db.query(sql, values, (err, resultados) => {
     if (err) {
       console.error('❌ Error al obtener viajes:', err);
       return res.status(500).json({ error: 'Error al obtener viajes' });
@@ -35,7 +50,7 @@ exports.obtenerTodosLosViajes = (req, res) => {
   });
 };
 
-// Obtener detalle de un viaje (plantillas, unidades, pasajeros)
+// Obtener detalle de un viaje con todas sus unidades y reservas confirmadas
 exports.obtenerDetalleViaje = (req, res) => {
   const idViaje = req.params.id;
 
