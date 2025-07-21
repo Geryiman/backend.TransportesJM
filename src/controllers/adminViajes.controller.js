@@ -131,3 +131,69 @@ exports.obtenerDetalleViaje = (req, res) => {
     res.json(Object.values(unidades));
   });
 };
+
+exports.obtenerDetalleViajeCompleto = (req, res) => {
+  const idViaje = req.params.id;
+
+  // Obtener todas las unidades del viaje con su plantilla
+  const sqlUnidades = `
+    SELECT 
+      uv.id AS id_unidad_viaje,
+      uv.numero_unidad,
+      pu.nombre AS plantilla_nombre,
+      pu.id AS plantilla_id
+    FROM unidades_viaje uv
+    JOIN plantillas_unidad pu ON uv.id_plantilla = pu.id
+    WHERE uv.id_viaje = ?
+  `;
+
+  db.query(sqlUnidades, [idViaje], (err, unidades) => {
+    if (err) {
+      console.error('❌ Error al obtener unidades:', err);
+      return res.status(500).json({ error: 'Error al obtener unidades' });
+    }
+
+    const promises = unidades.map(unidad => {
+      // Obtener estructura de asientos
+      const sqlEstructura = `
+        SELECT fila, col, tipo, numero
+        FROM estructura_asientos
+        WHERE plantilla_id = ?
+      `;
+
+      const sqlReservas = `
+        SELECT r.asiento, r.nombre_viajero, r.estado, u.nombre, u.apellidos, r.telefono_viajero
+        FROM reservas r
+        JOIN usuarios u ON r.id_usuario = u.id
+        WHERE r.id_unidad_viaje = ? AND r.estado IN ('confirmada', 'pendiente')
+      `;
+
+      return Promise.all([
+        new Promise((resolve, reject) => {
+          db.query(sqlEstructura, [unidad.plantilla_id], (err, estructura) => {
+            if (err) reject(err);
+            else resolve(estructura);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(sqlReservas, [unidad.id_unidad_viaje], (err, reservas) => {
+            if (err) reject(err);
+            else resolve(reservas);
+          });
+        })
+      ]).then(([estructura, reservas]) => ({
+        numero_unidad: unidad.numero_unidad,
+        plantilla: unidad.plantilla_nombre,
+        estructura_asientos: estructura,
+        asientos_confirmados: reservas
+      }));
+    });
+
+    Promise.all(promises)
+      .then(detalles => res.json(detalles))
+      .catch(err => {
+        console.error('❌ Error interno:', err);
+        res.status(500).json({ error: 'Error al procesar detalles' });
+      });
+  });
+};
