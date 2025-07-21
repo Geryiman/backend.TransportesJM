@@ -7,6 +7,7 @@ const adminRoutes = require('./src/routes/adminAuth.routes');
 const viajesRoutes = require('./src/routes/viajes.routes');
 const paradasRoutes = require('./src/routes/paradas.routes');
 
+
 const app = express();
 
 app.use(cors());
@@ -15,6 +16,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/viajes', viajesRoutes);
 app.use('/api/paradas', paradasRoutes);
+app.use('/api', require('./src/routes/adminViajes.routes'));
+
+
 
 
 app.get('/', (req, res) => {

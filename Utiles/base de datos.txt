@@ -123,3 +123,18 @@ CREATE TABLE lugares (
   nombre VARCHAR(100) NOT NULL,
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+SELECT 
+  v.id, v.origen, v.destino, v.fecha, v.hora, v.precio, v.estado,
+  a.nombre AS nombre_conductor,
+  (SELECT COUNT(*) FROM unidades_viaje uv WHERE uv.id_viaje = v.id) AS total_unidades
+FROM viajes v
+LEFT JOIN administradores a ON v.id_conductor = a.id
+ORDER BY 
+  CASE 
+    WHEN CONCAT(v.fecha, ' ', v.hora) >= NOW() THEN 0 
+    ELSE 1 
+  END,
+  v.fecha ASC, v.hora ASC;
+
