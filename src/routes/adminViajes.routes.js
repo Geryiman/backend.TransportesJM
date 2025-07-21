@@ -4,7 +4,7 @@ const adminViajesController = require('../controllers/adminViajes.controller');
 
 router.get('/admin/viajes', adminViajesController.obtenerTodosLosViajes);
 router.get('/admin/viajes/:id', adminViajesController.obtenerDetalleViaje);
-router.get('/admin/viajes/:id/detalle-completo', viajesController.obtenerDetalleViajeCompleto);
+router.get('/admin/viajes/:id/detalle-completo',adminViajesController.obtenerDetalleViajeCompleto);
 
 
 module.exports = router;
