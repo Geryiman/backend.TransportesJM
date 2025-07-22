@@ -9,10 +9,13 @@ exports.obtenerTodosLosViajes = (req, res) => {
       v.origen, v.destino, v.fecha, v.hora, v.precio, v.estado,
       uv.id AS id_unidad_viaje,
       uv.numero_unidad,
-      a.nombre AS nombre_conductor
+      a.nombre AS nombre_conductor,
+      pu.nombre AS nombre_plantilla,
+      pu.tipo AS tipo_plantilla
     FROM viajes v
     LEFT JOIN unidades_viaje uv ON uv.id_viaje = v.id
     LEFT JOIN administradores a ON uv.id_conductor = a.id
+    LEFT JOIN plantillas_unidad pu ON uv.id_plantilla = pu.id
     WHERE 1 = 1
   `;
 
@@ -38,7 +41,6 @@ exports.obtenerTodosLosViajes = (req, res) => {
       return res.status(500).json({ error: 'Error al obtener viajes' });
     }
 
-    // Agrupar viajes por ID
     const viajesMap = new Map();
 
     resultados.forEach(row => {
@@ -61,7 +63,9 @@ exports.obtenerTodosLosViajes = (req, res) => {
         viajesMap.get(id).unidades.push({
           id_unidad_viaje: row.id_unidad_viaje,
           numero_unidad: row.numero_unidad,
-          nombre_conductor: row.nombre_conductor
+          nombre_conductor: row.nombre_conductor,
+          nombre_plantilla: row.nombre_plantilla,
+          tipo_plantilla: row.tipo_plantilla
         });
       }
     });
@@ -69,6 +73,7 @@ exports.obtenerTodosLosViajes = (req, res) => {
     res.json(Array.from(viajesMap.values()));
   });
 };
+
 
 
 // Obtener detalle de un viaje con todas sus unidades y reservas confirmadas
