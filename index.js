@@ -18,7 +18,7 @@ app.use('/api/paradas', paradasRoutes);
 
 
 app.get('/', (req, res) => {
-  res.send('Bienvenido a la API de Transportes JM relizada por German Yair suerte en tu viaje, jaja');
+  res.send('Bienvenido a la API de Transportes JM ');
 });
 
 const PORT = process.env.PORT || 3000;
