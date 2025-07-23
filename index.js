@@ -6,6 +6,9 @@ const authRoutes = require('./src/routes/auth.routes');
 const adminRoutes = require('./src/routes/adminAuth.routes');
 const viajesRoutes = require('./src/routes/viajes.routes');
 const paradasRoutes = require('./src/routes/paradas.routes');
+const viajeRegistroRoutes = require('./src/routes/viajeRegistro.route');
+const viajesDetalleRoutes = require('./src/routes/viajesDetalle.route');
+const reservasRoutes = require('./src/routes/reservas.routes');
 
 const app = express();
 
@@ -15,10 +18,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/viajes', viajesRoutes);
 app.use('/api/paradas', paradasRoutes);
+app.use('/api/viaje-registro', viajeRegistroRoutes);
+app.use('/api/viajes-detalle', viajesDetalleRoutes);
+app.use('/api/reservas', reservasRoutes);
+app.use('/api/pagos', require('./src/routes/pagos.routes'));
 
 
 app.get('/', (req, res) => {
-  res.send('Bienvenido a la API de Transportes JM ');
+  res.send('Bienvenido a la API de Transportes JM relizada por German Yair suerte en tu viaje, jaja');
 });
 
 const PORT = process.env.PORT || 3000;

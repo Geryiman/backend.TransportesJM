@@ -1,13 +1,13 @@
---  Borrar base de datos si existe
+-- Borrar base de datos si existe
 DROP DATABASE IF EXISTS transportes;
 
---  Crear base de datos
+-- Crear base de datos
 CREATE DATABASE transportes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
---  Usar la base de datos
+-- Usar base de datos
 USE transportes;
 
--- Tabla de usuarios (clientes)
+-- Tabla de usuarios
 CREATE TABLE usuarios (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE administradores (
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 🚐 Plantillas de unidades
+-- Plantillas de unidades
 CREATE TABLE plantillas_unidad (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE estructura_asientos (
   FOREIGN KEY (plantilla_id) REFERENCES plantillas_unidad(id) ON DELETE CASCADE
 );
 
---  Plantillas de paradas
+-- Plantillas de paradas
 CREATE TABLE plantillas_parada (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
@@ -62,14 +62,14 @@ CREATE TABLE plantillas_parada (
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---  Paradas individuales
+-- Paradas individuales (opcional si se usan nombres)
 CREATE TABLE paradas_extra (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---  Viajes
+-- Tabla de viajes
 CREATE TABLE viajes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   origen VARCHAR(100) NOT NULL,
@@ -88,17 +88,19 @@ CREATE TABLE viajes (
   FOREIGN KEY (id_conductor) REFERENCES administradores(id)
 );
 
--- Unidades asignadas
+-- Unidades asignadas a viajes
 CREATE TABLE unidades_viaje (
   id INT AUTO_INCREMENT PRIMARY KEY,
   id_viaje INT NOT NULL,
   id_plantilla INT NOT NULL,
   numero_unidad INT NOT NULL,
+  id_conductor INT NOT NULL,
   FOREIGN KEY (id_viaje) REFERENCES viajes(id) ON DELETE CASCADE,
-  FOREIGN KEY (id_plantilla) REFERENCES plantillas_unidad(id)
+  FOREIGN KEY (id_plantilla) REFERENCES plantillas_unidad(id),
+  FOREIGN KEY (id_conductor) REFERENCES administradores(id)
 );
 
---  Reservas
+-- Tabla de reservas
 CREATE TABLE reservas (
   id INT AUTO_INCREMENT PRIMARY KEY,
   id_usuario INT NOT NULL,
@@ -107,39 +109,21 @@ CREATE TABLE reservas (
   nombre_viajero VARCHAR(100) NOT NULL,
   telefono_viajero VARCHAR(20),
   sube_en_terminal BOOLEAN DEFAULT TRUE,
-  id_parada_extra INT DEFAULT NULL,
+  parada_extra_nombre VARCHAR(100),
+  parada_bajada_nombre VARCHAR(100),
+  metodo_pago VARCHAR(20) DEFAULT 'efectivo',
+  pago_confirmado BOOLEAN DEFAULT FALSE,
+  referencia_pago VARCHAR(100),
   estado ENUM('pendiente', 'confirmada', 'rechazada') DEFAULT 'pendiente',
   reservado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE,
   FOREIGN KEY (id_unidad_viaje) REFERENCES unidades_viaje(id) ON DELETE CASCADE,
-  FOREIGN KEY (id_parada_extra) REFERENCES plantillas_parada(id),
   UNIQUE KEY unique_asiento_por_viaje (id_unidad_viaje, asiento)
 );
 
-
--- Tabla de lugares de destino
+-- Tabla de lugares de destino (si usas sugerencias o historial)
 CREATE TABLE lugares (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-
-ALTER TABLE unidades_viaje
-ADD COLUMN id_conductor INT NOT NULL;
-ALTER TABLE reservas ADD COLUMN metodo_pago VARCHAR(20) DEFAULT 'efectivo';
-ALTER TABLE reservas ADD COLUMN pago_confirmado BOOLEAN DEFAULT FALSE;
-ALTER TABLE reservas ADD COLUMN referencia_pago VARCHAR(100);
--- Quitamos FK de parada_extra (opcional si ya no lo usas como ID)
-ALTER TABLE reservas DROP FOREIGN KEY reservas_ibfk_3;
-
--- Cambiamos id_parada_extra a texto
-ALTER TABLE reservas CHANGE id_parada_extra parada_extra_nombre VARCHAR(100);
-
--- Agregamos parada de bajada (como texto también)
-ALTER TABLE reservas ADD COLUMN parada_bajada_nombre VARCHAR(100);
-ALTER TABLE reservas
-ADD COLUMN parada_extra_nombre VARCHAR(100),
-ADD COLUMN parada_bajada_nombre VARCHAR(100),
-ADD COLUMN metodo_pago VARCHAR(20) DEFAULT 'efectivo',
-ADD COLUMN pago_confirmado BOOLEAN DEFAULT FALSE;

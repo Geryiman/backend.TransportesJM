@@ -90,40 +90,76 @@ exports.crearViaje = (req, res) => {
     id_parada_bajada
   } = req.body;
 
-  if (!origen || !destino || !fecha || !hora || !precio || !unidades || unidades.length === 0) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios' });
+  if (!origen || !destino || !fecha || !hora || !precio || !Array.isArray(unidades) || unidades.length === 0) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios o unidades no válidas' });
   }
 
-  const sqlViaje = `
-    INSERT INTO viajes (origen, destino, fecha, hora, precio, id_parada_subida, id_parada_bajada)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  const valuesViaje = [origen, destino, fecha, hora, precio, id_parada_subida || null, id_parada_bajada || null];
-
-  db.query(sqlViaje, valuesViaje, (err, result) => {
+  db.getConnection((err, connection) => {
     if (err) {
-      console.error('❌ Error al crear viaje:', err);
-      return res.status(500).json({ error: 'Error al crear el viaje' });
+      console.error('❌ Error al obtener conexión:', err);
+      return res.status(500).json({ error: 'Error de conexión a la base de datos' });
     }
 
-    const id_viaje = result.insertId;
-
-    // Crear unidades asociadas al viaje
-    const sqlUnidad = `
-      INSERT INTO unidades_viaje (id_viaje, id_plantilla, id_conductor)
-      VALUES ?
-    `;
-
-    const valuesUnidades = unidades.map(u => [id_viaje, u.id_plantilla, u.id_conductor]);
-
-    db.query(sqlUnidad, [valuesUnidades], (err2) => {
-      if (err2) {
-        console.error('❌ Error al asignar unidades:', err2);
-        return res.status(500).json({ error: 'Error al guardar unidades del viaje' });
+    connection.beginTransaction(err => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ error: 'Error al iniciar transacción' });
       }
 
-      res.json({ message: '✅ Viaje y unidades creados correctamente' });
+      const sqlViaje = `
+        INSERT INTO viajes (origen, destino, fecha, hora, precio, id_parada_subida, id_parada_bajada)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `;
+      const valuesViaje = [origen, destino, fecha, hora, precio, id_parada_subida || null, id_parada_bajada || null];
+
+      connection.query(sqlViaje, valuesViaje, (err, result) => {
+        if (err) {
+          console.error('❌ Error al crear viaje:', err);
+          return connection.rollback(() => {
+            connection.release();
+            res.status(500).json({ error: 'Error al crear el viaje' });
+          });
+        }
+
+        const id_viaje = result.insertId;
+
+        const sqlUnidades = `
+          INSERT INTO unidades_viaje (id_viaje, id_plantilla, id_conductor, numero_unidad)
+          VALUES ?
+        `;
+
+        const valuesUnidades = unidades.map((u, i) => [
+          id_viaje,
+          u.id_plantilla,
+          u.id_conductor,
+          i + 1
+        ]);
+
+        connection.query(sqlUnidades, [valuesUnidades], (err2) => {
+          if (err2) {
+            console.error('❌ Error al guardar unidades:', err2);
+            return connection.rollback(() => {
+              connection.release();
+              res.status(500).json({ error: 'Error al guardar unidades del viaje' });
+            });
+          }
+
+          connection.commit(err => {
+            if (err) {
+              return connection.rollback(() => {
+                connection.release();
+                res.status(500).json({ error: 'Error al confirmar la transacción' });
+              });
+            }
+
+            connection.release();
+            res.json({
+              message: '✅ Viaje y unidades creados correctamente',
+              id_viaje
+            });
+          });
+        });
+      });
     });
   });
 };
@@ -362,7 +398,6 @@ const sqlOcupados = `
   });
 };
 
-
 // Crear una nueva reserva
 exports.crearReserva = (req, res) => {
   const {
@@ -371,17 +406,18 @@ exports.crearReserva = (req, res) => {
     asiento,
     nombre_viajero,
     telefono_viajero,
-    id_parada_extra,
-    sube_en_terminal
+    sube_en_terminal,
+    parada_extra_nombre,       // ← NUEVO
+    parada_bajada_nombre,      // ← NUEVO
+    metodo_pago                // ← NUEVO
   } = req.body;
 
   if (!id_usuario || !id_unidad_viaje || !asiento || !nombre_viajero) {
     return res.status(400).json({ error: 'Faltan datos obligatorios' });
   }
 
-  const asientoStr = String(asiento); // ✅ Asegurarse que sea texto
+  const asientoStr = String(asiento);
 
-  // Verificar si el asiento ya está reservado (en pendiente o confirmada)
   const check = `
     SELECT * FROM reservas
     WHERE id_unidad_viaje = ? AND asiento = ? AND estado IN ('pendiente', 'confirmada')
@@ -394,8 +430,10 @@ exports.crearReserva = (req, res) => {
     const insert = `
       INSERT INTO reservas (
         id_usuario, id_unidad_viaje, asiento,
-        nombre_viajero, telefono_viajero, sube_en_terminal, id_parada_extra
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        nombre_viajero, telefono_viajero, sube_en_terminal,
+        parada_extra_nombre, parada_bajada_nombre,
+        metodo_pago, pago_confirmado
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     db.query(insert, [
@@ -405,7 +443,10 @@ exports.crearReserva = (req, res) => {
       nombre_viajero,
       telefono_viajero || null,
       sube_en_terminal ?? true,
-      id_parada_extra || null
+      parada_extra_nombre || null,
+      parada_bajada_nombre || null,
+      metodo_pago || 'efectivo',
+      false // siempre se crea sin pago confirmado
     ], (err2, result) => {
       if (err2) return res.status(500).json({ error: 'Error al guardar la reserva' });
       res.json({ message: 'Reserva realizada correctamente', id_reserva: result.insertId });
