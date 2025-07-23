@@ -16,6 +16,7 @@ router.put('/update-account', verifyAdminToken, adminController.updateAccountSta
 
 // Eliminar usuario (solo usuarios)
 router.delete('/delete-usuario/:id', verifyAdminToken, adminController.deleteUsuario);
+router.delete('/delete-admin/:id', verifyAdminToken, adminController.deleteAdmin);
 
 // Solicitudes de reservas pendientes
 router.put('/reservas/:id/confirmar', verifyAdminToken,viajesController.confirmarReserva);

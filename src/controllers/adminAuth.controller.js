@@ -168,3 +168,17 @@ exports.deleteUsuario = (req, res) => {
     res.json({ message: 'Usuario eliminado correctamente' });
   });
 };
+
+exports.deleteAdmin = (req, res) => {
+  const rolAdmin = req.admin?.rol;
+  if (rolAdmin !== 'administrador_general') {
+    return res.status(403).json({ message: 'Solo administradores generales pueden eliminar administradores' });
+  }
+
+  const { id } = req.params;
+  db.query('DELETE FROM administradores WHERE id = ?', [id], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Error al eliminar administrador' });
+    res.json({ message: 'Administrador eliminado correctamente' });
+  });
+};
+
