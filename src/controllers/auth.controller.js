@@ -69,8 +69,6 @@ exports.login = (req, res) => {
 exports.getPerfil = (req, res) => {
   const { id } = req.params;
 
-  console.log("Obteniendo perfil de usuario con ID:", id);
-
   db.query(
     'SELECT id, nombre, apellidos, telefono, username, genero, estado, favorito, creado_en FROM usuarios WHERE id = ?',
     [id],
