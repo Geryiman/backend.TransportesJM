@@ -1,5 +1,5 @@
 const allowedIPs = [
-  '205.164.182.166',            // Tu IP personal (para Postman)
+  '205.164.182.165',            // Tu IP personal (para Postman)
   '167.172.142.206',            // IP de tu servidor si hace peticiones internas
 ];
 
