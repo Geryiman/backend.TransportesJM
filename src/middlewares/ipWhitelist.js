@@ -1,5 +1,5 @@
 const allowedIPs = [
-  '205.164.182.165',      // Tu IP personal
+     // Tu IP personal
   '167.172.142.206'       // IP de tu servidor
 ];
 
@@ -20,6 +20,6 @@ module.exports = function (req, res, next) {
     return next();
   }
 
-  console.warn(`[BLOQUEADO] IP/Origen no autorizado: ${ip} - ${origin}`);
+  console.warn(`[BLOQUEADO] IP: ${ip} | Origin: ${origin || 'NULO'} | Path: ${req.originalUrl}`);
   return res.status(403).json({ message: 'Acceso denegado. IP u origen no autorizado.' });
 };
