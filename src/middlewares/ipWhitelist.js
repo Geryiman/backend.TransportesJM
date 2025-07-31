@@ -1,5 +1,5 @@
 const allowedIPs = [
-          // Tu IP de pruebas (Postman, personal)
+  '205.164.182.165',           // Tu IP de pruebas (Postman, personal)
   '167.172.142.206',           // IP del servidor
   // Puedes agregar más aquí si lo deseas
 ];
@@ -22,6 +22,6 @@ module.exports = function (req, res, next) {
     return next();
   }
 
-  console.warn(`🛑 [BLOQUEADO] IP: ${ip} | Origin: ${origin || 'NULO'} | Path: ${path}`);
+  console.warn(` [BLOQUEADO] IP: ${ip} | Origin: ${origin || 'NULO'} | Path: ${path}`);
   return res.status(403).json({ message: 'Acceso denegado. IP u origen no autorizado.' });
 };
