@@ -65,29 +65,7 @@ exports.login = (req, res) => {
   });
 };
 
-// Obtener el perfil del usuario por ID
-exports.getPerfil = (req, res) => {
-  const { id } = req.params;
 
-  console.log("Obteniendo perfil de usuario con ID:", id);
-
-  db.query(
-    'SELECT id, nombre, apellidos, telefono, username, genero, estado, favorito, creado_en FROM usuarios WHERE id = ?',
-    [id],
-    (err, results) => {
-      if (err) {
-        console.error("Error al obtener perfil:", err);
-        return res.status(500).json({ message: 'Error al obtener el perfil', error: err });
-      }
-
-      if (results.length === 0) {
-        return res.status(404).json({ message: 'Usuario no encontrado' });
-      }
-
-      res.json(results[0]);
-    }
-  );
-};
 
 // Obtener perfil del usuario autenticado (sin pasar ID por URL)
 exports.getPerfil = (req, res) => {

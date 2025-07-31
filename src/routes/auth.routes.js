@@ -10,6 +10,7 @@ router.get('/perfil/:id', authController.getPerfil);
 router.put('/cambiar-contrasena/', authController.cambiarContrasena);
 
 router.get('/reservas/:id', authController.obtenerReservasUsuario);
+
 router.get('/perfil/:id', verifyToken, authController.getPerfil);
 
 module.exports = router;
