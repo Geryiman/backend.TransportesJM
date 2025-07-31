@@ -2,6 +2,7 @@ require('dotenv').config();
 require('./cron/finalizarViajes');
 const express = require('express');
 const cors = require('cors');
+const ipWhitelist = require('./src/middlewares/ipWhitelist');
 const authRoutes = require('./src/routes/auth.routes');
 const adminRoutes = require('./src/routes/adminAuth.routes');
 const viajesRoutes = require('./src/routes/viajes.routes');
@@ -14,6 +15,8 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use('trust proxy', true);
+app.use(ipWhitelist);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/viajes', viajesRoutes);

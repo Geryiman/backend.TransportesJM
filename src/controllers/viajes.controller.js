@@ -85,7 +85,7 @@ exports.crearViaje = (req, res) => {
     fecha,
     hora,
     precio,
-    unidades, // array de { id_plantilla, id_conductor }
+    unidades, 
     id_parada_subida,
     id_parada_bajada
   } = req.body;
@@ -96,7 +96,7 @@ exports.crearViaje = (req, res) => {
 
   db.getConnection((err, connection) => {
     if (err) {
-      console.error('❌ Error al obtener conexión:', err);
+      console.error(' Error al obtener conexión:', err);
       return res.status(500).json({ error: 'Error de conexión a la base de datos' });
     }
 
@@ -114,7 +114,7 @@ exports.crearViaje = (req, res) => {
 
       connection.query(sqlViaje, valuesViaje, (err, result) => {
         if (err) {
-          console.error('❌ Error al crear viaje:', err);
+          console.error('Error al crear viaje:', err);
           return connection.rollback(() => {
             connection.release();
             res.status(500).json({ error: 'Error al crear el viaje' });
@@ -137,7 +137,7 @@ exports.crearViaje = (req, res) => {
 
         connection.query(sqlUnidades, [valuesUnidades], (err2) => {
           if (err2) {
-            console.error('❌ Error al guardar unidades:', err2);
+            console.error('Error al guardar unidades:', err2);
             return connection.rollback(() => {
               connection.release();
               res.status(500).json({ error: 'Error al guardar unidades del viaje' });
@@ -154,7 +154,7 @@ exports.crearViaje = (req, res) => {
 
             connection.release();
             res.json({
-              message: '✅ Viaje y unidades creados correctamente',
+              message: ' Viaje y unidades creados correctamente',
               id_viaje
             });
           });
@@ -407,9 +407,9 @@ exports.crearReserva = (req, res) => {
     nombre_viajero,
     telefono_viajero,
     sube_en_terminal,
-    parada_extra_nombre,       // ← NUEVO
-    parada_bajada_nombre,      // ← NUEVO
-    metodo_pago                // ← NUEVO
+    parada_extra_nombre,       
+    parada_bajada_nombre,      
+    metodo_pago                
   } = req.body;
 
   if (!id_usuario || !id_unidad_viaje || !asiento || !nombre_viajero) {
@@ -446,7 +446,7 @@ exports.crearReserva = (req, res) => {
       parada_extra_nombre || null,
       parada_bajada_nombre || null,
       metodo_pago || 'efectivo',
-      false // siempre se crea sin pago confirmado
+      false
     ], (err2, result) => {
       if (err2) return res.status(500).json({ error: 'Error al guardar la reserva' });
       res.json({ message: 'Reserva realizada correctamente', id_reserva: result.insertId });
