@@ -5,6 +5,7 @@ const allowedIPs = [
 
 const allowedOrigins = [
   'https://transportessjm.com',
+  'https://www.transportessjm.com', 
   'http://localhost:5173'
 ];
 
