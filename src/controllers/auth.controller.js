@@ -65,11 +65,9 @@ exports.login = (req, res) => {
   });
 };
 
-
-
-// Obtener perfil del usuario autenticado (sin pasar ID por URL)
+// Obtener el perfil del usuario por ID
 exports.getPerfil = (req, res) => {
-  const id = req.user.id; // ID extraído desde el middleware de verificación de token
+  const { id } = req.params;
 
   console.log("Obteniendo perfil de usuario con ID:", id);
 
@@ -90,6 +88,7 @@ exports.getPerfil = (req, res) => {
     }
   );
 };
+
 
 
 // Cambiar contraseña de un usuario
