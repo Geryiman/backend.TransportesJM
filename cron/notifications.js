@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const db = require('../config/db');
+const db = require('../src/config/db');
 const axios = require('axios');
 
 // Ejecutar cada 30 minutos
