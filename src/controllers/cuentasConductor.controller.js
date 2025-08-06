@@ -1,4 +1,5 @@
-const db = require('../config/db'); 
+const db = require('../config/db');
+const dbAsync = require('../config/db').promise(); // Solo para funciones async/await
 
 // Crear una cuenta del conductor para un viaje
 const crearCuentaConductor = (req, res) => {
@@ -23,9 +24,7 @@ const crearCuentaConductor = (req, res) => {
 const obtenerCuentaConductor = (req, res) => {
   const { id_viaje } = req.params;
 
-  const sql = `
-    SELECT * FROM cuentas_conductor WHERE id_viaje = ?
-  `;
+  const sql = `SELECT * FROM cuentas_conductor WHERE id_viaje = ?`;
 
   db.query(sql, [id_viaje], (err, results) => {
     if (err) {
@@ -40,19 +39,21 @@ const obtenerCuentaConductor = (req, res) => {
     res.json(results[0]);
   });
 };
+
+// Obtener o crear automáticamente una cuenta si no existe
 const obtenerCuentaPorViaje = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Buscar si ya existe cuenta para este viaje
-    const [cuentaExistente] = await db.query('SELECT * FROM cuentas_conductor WHERE id_viaje = ?', [id]);
+    // Verificar si ya existe cuenta
+    const [cuentaExistente] = await dbAsync.query('SELECT * FROM cuentas_conductor WHERE id_viaje = ?', [id]);
 
     if (cuentaExistente.length > 0) {
       return res.json(cuentaExistente[0]);
     }
 
-    // Obtener número de pasajeros confirmados
-    const [resPasajeros] = await db.query(`
+    // Obtener pasajeros confirmados
+    const [resPasajeros] = await dbAsync.query(`
       SELECT COUNT(*) AS total
       FROM reservas
       WHERE estado = 'confirmada'
@@ -67,8 +68,8 @@ const obtenerCuentaPorViaje = async (req, res) => {
       return res.status(404).json({ mensaje: 'No hay pasajeros confirmados para este viaje' });
     }
 
-    // Obtener el precio del viaje
-    const [resPrecio] = await db.query('SELECT precio FROM viajes WHERE id = ?', [id]);
+    // Obtener precio
+    const [resPrecio] = await dbAsync.query('SELECT precio FROM viajes WHERE id = ?', [id]);
 
     if (resPrecio.length === 0) {
       return res.status(404).json({ mensaje: 'Viaje no encontrado' });
@@ -77,7 +78,7 @@ const obtenerCuentaPorViaje = async (req, res) => {
     const precio = parseFloat(resPrecio[0].precio);
     const ganancia_total = total_pasajeros * precio;
 
-    // Insertar cuenta automáticamente
+    // Insertar nueva cuenta automáticamente
     const nuevaCuenta = {
       id_viaje: id,
       total_pasajeros,
@@ -88,7 +89,7 @@ const obtenerCuentaPorViaje = async (req, res) => {
       total_generado: ganancia_total
     };
 
-    await db.query(`
+    await dbAsync.query(`
       INSERT INTO cuentas_conductor 
       (id_viaje, total_pasajeros, total_efectivo, total_transferencia, total_pendiente_entregar, total_gastos, total_generado)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -109,14 +110,12 @@ const obtenerCuentaPorViaje = async (req, res) => {
     return res.status(500).json({ mensaje: 'Error del servidor' });
   }
 };
-// Guardar cuenta o actualizar si ya existe
+
+// Guardar o actualizar gastos del viaje
 const guardarCuenta = (req, res) => {
   const { id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros } = req.body;
 
-  // Verificar si ya existe una cuenta para ese viaje
-  const verificarSQL = `
-    SELECT * FROM cuentas_conductor WHERE id_viaje = ?
-  `;
+  const verificarSQL = `SELECT * FROM cuentas_conductor WHERE id_viaje = ?`;
 
   db.query(verificarSQL, [id_viaje], (err, results) => {
     if (err) {
@@ -125,7 +124,7 @@ const guardarCuenta = (req, res) => {
     }
 
     if (results.length > 0) {
-      // Ya existe, hacer UPDATE
+      // Actualizar si ya existe
       const updateSQL = `
         UPDATE cuentas_conductor
         SET gasolina = ?, casetas = ?, otros = ?, descripcion_otros = ?
@@ -141,7 +140,7 @@ const guardarCuenta = (req, res) => {
       });
 
     } else {
-      // No existe, hacer INSERT
+      // Insertar si no existe
       const insertSQL = `
         INSERT INTO cuentas_conductor
         (id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros)
@@ -162,6 +161,6 @@ const guardarCuenta = (req, res) => {
 module.exports = {
   crearCuentaConductor,
   obtenerCuentaConductor,
-    obtenerCuentaPorViaje,
+  obtenerCuentaPorViaje,
   guardarCuenta,
 };
