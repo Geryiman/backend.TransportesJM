@@ -9,13 +9,24 @@ exports.getResumenCuentaViaje = (req, res) => {
   SUM(CASE WHEN r.metodo_pago = 'efectivo' THEN 1 ELSE 0 END) AS totalEfectivoPasajeros,
   SUM(CASE WHEN r.metodo_pago = 'transferencia' THEN 1 ELSE 0 END) AS totalTransferenciaPasajeros,
   SUM(CASE WHEN r.metodo_pago = 'efectivo' THEN v.precio ELSE 0 END) AS totalGenerado,
-  COALESCE(cv.gasolina, 0) + COALESCE(cv.casetas, 0) + COALESCE(cv.otros, 0) AS totalGastos,
-  SUM(CASE WHEN r.metodo_pago = 'efectivo' THEN v.precio ELSE 0 END) -
-  (COALESCE(cv.gasolina, 0) + COALESCE(cv.casetas, 0) + COALESCE(cv.otros, 0)) AS pendienteEntregar
+  (
+    SELECT COALESCE(gasolina, 0) + COALESCE(casetas, 0) + COALESCE(otros, 0)
+    FROM cuentas_viaje
+    WHERE id_viaje = v.id AND id_conductor = uv.id_conductor
+    LIMIT 1
+  ) AS totalGastos,
+  (
+    SUM(CASE WHEN r.metodo_pago = 'efectivo' THEN v.precio ELSE 0 END) -
+    (
+      SELECT COALESCE(gasolina, 0) + COALESCE(casetas, 0) + COALESCE(otros, 0)
+      FROM cuentas_viaje
+      WHERE id_viaje = v.id AND id_conductor = uv.id_conductor
+      LIMIT 1
+    )
+  ) AS pendienteEntregar
 FROM reservas r
 JOIN unidades_viaje uv ON r.id_unidad_viaje = uv.id
 JOIN viajes v ON uv.id_viaje = v.id
-LEFT JOIN cuentas_viaje cv ON cv.id_viaje = v.id AND cv.id_conductor = uv.id_conductor
 WHERE v.id = ?
   AND r.estado = 'confirmada';
 
