@@ -23,20 +23,30 @@ exports.confirmarReserva = (req, res) => {
 exports.rechazarReserva = (req, res) => {
   const { id } = req.params;
 
-  const sql = "UPDATE reservas SET estado = 'rechazada' WHERE id = ? AND estado = 'pendiente'";
-  db.query(sql, [id], (err, result) => {
+  const sqlVerificar = "SELECT estado FROM reservas WHERE id = ?";
+  db.query(sqlVerificar, [id], (err, result) => {
     if (err) {
-      console.error('❌ Error al rechazar reserva:', err);
-      return res.status(500).json({ message: 'Error al rechazar reserva' });
+      console.error('❌ Error al verificar reserva:', err);
+      return res.status(500).json({ message: 'Error interno' });
     }
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Reserva no encontrada o ya actualizada' });
+    if (result.length === 0 || result[0].estado !== 'pendiente') {
+      return res.status(404).json({ message: 'Reserva no encontrada o ya rechazada' });
     }
 
-    res.json({ message: '❌ Reserva rechazada correctamente' });
+    // Eliminar la reserva directamente
+    const eliminar = "DELETE FROM reservas WHERE id = ?";
+    db.query(eliminar, [id], (err2) => {
+      if (err2) {
+        console.error('❌ Error al eliminar reserva:', err2);
+        return res.status(500).json({ message: 'Error al eliminar reserva' });
+      }
+
+      res.json({ message: '✅ Reserva rechazada y asiento liberado correctamente' });
+    });
   });
 };
+
 
 // ✅ Rechazar múltiples reservas por array de IDs
 exports.rechazarMultiplesReservas = (req, res) => {
@@ -46,15 +56,15 @@ exports.rechazarMultiplesReservas = (req, res) => {
     return res.status(400).json({ message: 'Se requiere un array de IDs de reservas' });
   }
 
-  const sql = `UPDATE reservas SET estado = 'rechazada' WHERE estado = 'pendiente' AND id IN (?)`;
-  db.query(sql, [ids], (err, result) => {
+  const eliminar = "DELETE FROM reservas WHERE id IN (?) AND estado = 'pendiente'";
+  db.query(eliminar, [ids], (err, result) => {
     if (err) {
-      console.error('❌ Error al rechazar múltiples reservas:', err);
+      console.error('❌ Error al eliminar reservas:', err);
       return res.status(500).json({ message: 'Error al rechazar reservas' });
     }
 
     res.json({
-      message: `❌ ${result.affectedRows} reserva(s) rechazada(s) correctamente`,
+      message: `✅ ${result.affectedRows} reserva(s) rechazadas y liberadas correctamente`
     });
   });
 };
