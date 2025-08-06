@@ -1,62 +1,77 @@
+// cron/notifications.js
 const cron = require('node-cron');
 const db = require('../src/config/db');
-const axios = require('axios');
+const enviarNotificacion = require('../src/utils/enviarNotificacion');
 
 // Ejecutar cada 30 minutos
 cron.schedule('*/30 * * * *', async () => {
-  console.log('🔔 Ejecutando tareas de notificaciones automáticas...');
+  console.log('🔔 Ejecutando CRON de notificaciones...');
 
   try {
-    // 1. Notificar a admin si hay solicitudes pendientes
-    const [pendientes] = await db.query("SELECT COUNT(*) as total FROM reservas WHERE estado = 'pendiente'");
+    // 1. Notificar a administradores si hay reservas pendientes
+    const [pendientes] = await db.promise().query(`
+      SELECT COUNT(*) AS total FROM reservas WHERE estado = 'pendiente'
+    `);
+
     if (pendientes[0].total > 0) {
-      await axios.post(`${process.env.FRONTEND_URL}/api/notify/admin`, {
-        title: '🚨 Solicitudes pendientes',
-        body: `Tienes ${pendientes[0].total} reservas por revisar.`,
-        link: '/admin/notificaciones'
-      });
+      // Puedes notificar a todos los administradores generales
+      const [admins] = await db.promise().query(`
+        SELECT id, token_notificacion FROM administradores 
+        WHERE rol = 'administrador_general' AND token_notificacion IS NOT NULL
+      `);
+
+      for (const admin of admins) {
+        await enviarNotificacion(
+          admin.token_notificacion,
+          '🚨 Reservas pendientes',
+          `Tienes ${pendientes[0].total} reservas sin revisar`,
+          '/admin/notificaciones'
+        );
+      }
     }
 
-    // 2. Notificar a usuarios si su reserva fue aceptada
-    const [aceptadas] = await db.query(`
-      SELECT r.id_usuario, u.token_notificacion
+    // 2. Notificar a usuarios con reservas confirmadas y aún no notificadas
+    const [reservasConfirmadas] = await db.promise().query(`
+      SELECT r.id, r.id_usuario, u.token_notificacion
       FROM reservas r
       JOIN usuarios u ON r.id_usuario = u.id
-      WHERE r.estado = 'confirmada' AND r.notificado = 0
+      WHERE r.estado = 'confirmada' AND r.notificado = 0 AND u.token_notificacion IS NOT NULL
     `);
 
-    for (const row of aceptadas) {
-      if (row.token_notificacion) {
-        await axios.post(`${process.env.FRONTEND_URL}/api/notify/user`, {
-          token: row.token_notificacion,
-          title: '🎉 ¡Reserva confirmada!',
-          body: 'Tu solicitud ha sido aceptada. ¡Prepárate para el viaje!',
-          link: '/usuario/mis-viajes'
-        });
+    for (const reserva of reservasConfirmadas) {
+      await enviarNotificacion(
+        reserva.token_notificacion,
+        '🎉 Reserva confirmada',
+        'Tu solicitud de viaje ha sido aceptada.',
+        '/usuario/mis-viajes'
+      );
 
-        await db.query("UPDATE reservas SET notificado = 1 WHERE id_usuario = ?", [row.id_usuario]);
-      }
+      await db.promise().query(
+        'UPDATE reservas SET notificado = 1 WHERE id = ?',
+        [reserva.id]
+      );
     }
 
-    // 3. Notificar a conductores de viajes nuevos asignados
-    const [asignados] = await db.query(`
-      SELECT a.id, a.token_notificacion
+    // 3. Notificar a conductores con viajes asignados y aún no notificados
+    const [viajesAsignados] = await db.promise().query(`
+      SELECT uv.id, a.id AS id_conductor, a.token_notificacion
       FROM unidades_viaje uv
       JOIN administradores a ON uv.id_conductor = a.id
-      WHERE uv.notificado = 0
+      WHERE uv.notificado = 0 AND a.token_notificacion IS NOT NULL
     `);
 
-    for (const row of asignados) {
-      if (row.token_notificacion) {
-        await axios.post(`${process.env.FRONTEND_URL}/api/notify/conductor`, {
-          token: row.token_notificacion,
-          title: '🚌 Nuevo viaje asignado',
-          body: 'Tienes un nuevo viaje programado. Revísalo.',
-          link: '/conductor/viajes'
-        });
+    for (const viaje of viajesAsignados) {
+      await enviarNotificacion(
+        viaje.token_notificacion,
+        '🚌 Nuevo viaje asignado',
+        'Tienes un nuevo viaje pendiente. Revisa tu panel.',
+        '/conductor/viajes'
+      );
 
-        await db.query("UPDATE unidades_viaje SET notificado = 1 WHERE id_conductor = ?", [row.id]);
-      }
+      await db.promise().query(
+        'UPDATE unidades_viaje SET notificado = 1 WHERE id = ?',
+        [viaje.id]
+      );
     }
 
     console.log('✅ Notificaciones enviadas correctamente.');

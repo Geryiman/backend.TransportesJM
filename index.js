@@ -1,6 +1,8 @@
 require('dotenv').config();
 require('./cron/finalizarViajes');
 require('./cron/notifications');
+
+
 const express = require('express');
 const cors = require('cors');
 const ipWhitelist = require('./src/middlewares/ipWhitelist');
@@ -15,6 +17,8 @@ const conductorRoutes = require('./src/routes/conductor.routes');
 const cuentasRoutes = require('./src/routes/cuentasConductor.routes');
 const cuentasViajeRoutes = require('./src/routes/cuentasViaje.routes');
 const notificacionRoutes = require('./src/routes/notificacion.routes');
+
+require('./cron/notifications');
 
 
 const app = express();
