@@ -1,17 +1,17 @@
-// src/routes/cuentasConductor.routes.js
 const express = require('express');
 const router = express.Router();
-
-
 const cuentasController = require('../controllers/cuentasConductor.controller');
 
-// Las funciones deben existir en el controlador
-router.post('/', cuentasController.crearCuentaConductor);
-router.get('/:id_viaje', cuentasController.obtenerCuentaConductor);
-router.get('/viaje/:id', cuentasController.obtenerCuentaPorViaje);
-router.post('/cuentas/guardar', cuentasController.guardarCuenta);
+// Crear cuenta de conductor
+router.post('/cuentas', cuentasController.crearCuentaConductor);
+
+// Obtener cuenta por id_viaje (modo clásico)
+router.get('/cuentas/:id_viaje', cuentasController.obtenerCuentaConductor);
+
+// Obtener o crear automáticamente si no hay cuenta
 router.get('/cuentas/viaje/:id', cuentasController.obtenerCuentaPorViaje);
 
-
+// Guardar o actualizar gastos
+router.post('/cuentas/guardar', cuentasController.guardarCuenta);
 
 module.exports = router;
