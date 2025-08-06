@@ -26,7 +26,7 @@ app.use('/api/paradas', paradasRoutes);
 app.use('/api/viaje-registro', viajeRegistroRoutes);
 app.use('/api/viajes-detalle', viajesDetalleRoutes);
 app.use('/api/reservas', reservasRoutes);
-app.use('/api/conductor', conductorRoutes);
+app.use('/api/conductor/cuentas', cuentasRoutes);
 app.use('/api', cuentasRoutes);
 app.use('/api/pagos', require('./src/routes/pagos.routes'));
 
