@@ -19,7 +19,7 @@ exports.confirmarReserva = (req, res) => {
   });
 };
 
-// ✅ Rechazar una sola reserva por ID
+// ✅ Rechazar (eliminar) una sola reserva por ID
 exports.rechazarReserva = (req, res) => {
   const { id } = req.params;
 
@@ -31,10 +31,10 @@ exports.rechazarReserva = (req, res) => {
     }
 
     if (result.length === 0 || result[0].estado !== 'pendiente') {
-      return res.status(404).json({ message: 'Reserva no encontrada o ya rechazada' });
+      return res.status(404).json({ message: 'Reserva no encontrada o ya procesada' });
     }
 
-    // Eliminar la reserva directamente
+    // Eliminación total
     const eliminar = "DELETE FROM reservas WHERE id = ?";
     db.query(eliminar, [id], (err2) => {
       if (err2) {
@@ -42,10 +42,11 @@ exports.rechazarReserva = (req, res) => {
         return res.status(500).json({ message: 'Error al eliminar reserva' });
       }
 
-      res.json({ message: '✅ Reserva rechazada y asiento liberado correctamente' });
+      res.json({ message: '✅ Reserva rechazada y eliminada correctamente' });
     });
   });
 };
+
 
 
 // ✅ Rechazar (eliminar) múltiples reservas por array de IDs

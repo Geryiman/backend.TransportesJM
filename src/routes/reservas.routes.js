@@ -6,7 +6,7 @@ const reservasController = require('../controllers/reservas.controller');
 router.put('/:id/confirmar', reservasController.confirmarReserva);
 
 // Rechazar una reserva individual por ID
-router.put('/:id/rechazar', reservasController.rechazarReserva);
+router.delete('/:id/rechazar', reservasController.rechazarReserva);
 
 // Rechazar múltiples reservas (por IDs)
 router.put('/rechazar-multiples', reservasController.rechazarMultiplesReservas);
