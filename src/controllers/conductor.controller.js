@@ -181,3 +181,90 @@ exports.actualizarMetodoPago = (req, res) => {
   });
 };
 
+
+exports.guardarCuentaConductor = (req, res) => {
+  const {
+    id_viaje,
+    gasolina,
+    casetas,
+    otros = [],
+    total_pasajeros,
+    total_efectivo,
+    total_transferencia,
+    total_pendiente_entregar,
+    total_gastos,
+    total_generado
+  } = req.body;
+
+  if (!id_viaje) {
+    return res.status(400).json({ message: 'ID de viaje requerido' });
+  }
+
+  // Obtener conductor desde el viaje
+  const sqlConductor = `
+    SELECT id_conductor FROM unidades_viaje WHERE id_viaje = ? LIMIT 1
+  `;
+
+  db.query(sqlConductor, [id_viaje], (err, result) => {
+    if (err || result.length === 0) {
+      console.error('❌ Error obteniendo conductor:', err);
+      return res.status(500).json({ message: 'Error al obtener conductor' });
+    }
+
+    const id_conductor = result[0].id_conductor;
+
+    const descripcion_otros = otros.map(o => `${o.descripcion}: $${o.monto}`).join(', ');
+
+    const sqlInsertCuenta = `
+      INSERT INTO cuentas_conductor (
+        id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros,
+        total_pasajeros, total_efectivo, total_transferencia,
+        total_pendiente_entregar, total_gastos, total_generado
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const valuesCuenta = [
+      id_viaje, id_conductor,
+      gasolina || 0,
+      casetas || 0,
+      otros.reduce((sum, o) => sum + o.monto, 0),
+      descripcion_otros,
+      total_pasajeros,
+      total_efectivo,
+      total_transferencia,
+      total_pendiente_entregar,
+      total_gastos,
+      total_generado
+    ];
+
+    db.query(sqlInsertCuenta, valuesCuenta, (err, resultInsert) => {
+      if (err) {
+        console.error('❌ Error al guardar cuenta del viaje:', err);
+        return res.status(500).json({ message: 'Error al guardar cuenta' });
+      }
+
+      const idCuenta = resultInsert.insertId;
+
+      if (otros.length === 0) {
+        return res.json({ message: '✅ Cuenta guardada sin otros gastos' });
+      }
+
+      const sqlInsertOtros = `
+        INSERT INTO cuentas_conductor_otros (id_cuenta_conductor, descripcion, monto)
+        VALUES ?
+      `;
+
+      const valuesOtros = otros.map(o => [idCuenta, o.descripcion, o.monto]);
+
+      db.query(sqlInsertOtros, [valuesOtros], (err) => {
+        if (err) {
+          console.error('❌ Error al guardar otros gastos:', err);
+          return res.status(500).json({ message: 'Cuenta guardada, pero falló guardar los otros gastos' });
+        }
+
+        return res.json({ message: '✅ Cuenta guardada correctamente con todos los gastos' });
+      });
+    });
+  });
+};
+

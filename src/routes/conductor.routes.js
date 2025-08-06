@@ -14,5 +14,6 @@ router.get('/viaje/:id/detalle', conductorController.detalleViajeConductor);
 // Actualizar el estado de pago de una reserva
 router.put('/reservas/actualizar-pago', conductorController.actualizarMetodoPago);
 
+router.post('/cuentas/guardar', conductorController.guardarCuentaConductor);
 
 module.exports = router;
