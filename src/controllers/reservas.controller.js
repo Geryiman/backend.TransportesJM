@@ -48,7 +48,7 @@ exports.rechazarReserva = (req, res) => {
 };
 
 
-// ✅ Rechazar múltiples reservas por array de IDs
+// ✅ Rechazar (eliminar) múltiples reservas por array de IDs
 exports.rechazarMultiplesReservas = (req, res) => {
   const { ids } = req.body;
 
@@ -56,18 +56,23 @@ exports.rechazarMultiplesReservas = (req, res) => {
     return res.status(400).json({ message: 'Se requiere un array de IDs de reservas' });
   }
 
-  const eliminar = "DELETE FROM reservas WHERE id IN (?) AND estado = 'pendiente'";
-  db.query(eliminar, [ids], (err, result) => {
+  const sql = `
+    DELETE FROM reservas
+    WHERE estado = 'pendiente' AND id IN (?)
+  `;
+
+  db.query(sql, [ids], (err, result) => {
     if (err) {
       console.error('❌ Error al eliminar reservas:', err);
       return res.status(500).json({ message: 'Error al rechazar reservas' });
     }
 
     res.json({
-      message: `✅ ${result.affectedRows} reserva(s) rechazadas y liberadas correctamente`
+      message: `✅ ${result.affectedRows} reserva(s) rechazadas y eliminadas correctamente`
     });
   });
 };
+
 
 // ✅ Confirmar todas las reservas de un pasajero en un viaje
 exports.confirmarMultiplesReservas = (req, res) => {
