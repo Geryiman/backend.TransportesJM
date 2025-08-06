@@ -40,28 +40,75 @@ const obtenerCuentaConductor = (req, res) => {
     res.json(results[0]);
   });
 };
-const obtenerCuentaPorViaje = (req, res) => {
+const obtenerCuentaPorViaje = async (req, res) => {
   const { id } = req.params;
 
-  const sql = `
-    SELECT * FROM cuentas_conductor
-    WHERE id_viaje = ?
-  `;
+  try {
+    // Buscar si ya existe cuenta para este viaje
+    const [cuentaExistente] = await db.query('SELECT * FROM cuentas_conductor WHERE id_viaje = ?', [id]);
 
-  db.query(sql, [id], (err, results) => {
-    if (err) {
-      console.error('❌ Error al obtener cuenta:', err);
-      return res.status(500).json({ mensaje: 'Error al obtener cuenta' });
+    if (cuentaExistente.length > 0) {
+      return res.json(cuentaExistente[0]);
     }
 
-    if (results.length === 0) {
-      return res.status(404).json({ mensaje: 'No hay cuenta registrada para este viaje' });
+    // Obtener número de pasajeros confirmados
+    const [resPasajeros] = await db.query(`
+      SELECT COUNT(*) AS total
+      FROM reservas
+      WHERE estado = 'confirmada'
+        AND id_unidad_viaje IN (
+          SELECT id FROM unidades_viaje WHERE id_viaje = ?
+        )
+    `, [id]);
+
+    const total_pasajeros = resPasajeros[0].total;
+
+    if (total_pasajeros === 0) {
+      return res.status(404).json({ mensaje: 'No hay pasajeros confirmados para este viaje' });
     }
 
-    res.json(results[0]);
-  });
+    // Obtener el precio del viaje
+    const [resPrecio] = await db.query('SELECT precio FROM viajes WHERE id = ?', [id]);
+
+    if (resPrecio.length === 0) {
+      return res.status(404).json({ mensaje: 'Viaje no encontrado' });
+    }
+
+    const precio = parseFloat(resPrecio[0].precio);
+    const ganancia_total = total_pasajeros * precio;
+
+    // Insertar cuenta automáticamente
+    const nuevaCuenta = {
+      id_viaje: id,
+      total_pasajeros,
+      total_efectivo: ganancia_total,
+      total_transferencia: 0,
+      total_pendiente_entregar: 0,
+      total_gastos: 0,
+      total_generado: ganancia_total
+    };
+
+    await db.query(`
+      INSERT INTO cuentas_conductor 
+      (id_viaje, total_pasajeros, total_efectivo, total_transferencia, total_pendiente_entregar, total_gastos, total_generado)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+      nuevaCuenta.id_viaje,
+      nuevaCuenta.total_pasajeros,
+      nuevaCuenta.total_efectivo,
+      nuevaCuenta.total_transferencia,
+      nuevaCuenta.total_pendiente_entregar,
+      nuevaCuenta.total_gastos,
+      nuevaCuenta.total_generado
+    ]);
+
+    return res.status(201).json(nuevaCuenta);
+
+  } catch (error) {
+    console.error('❌ Error al obtener o crear cuenta del viaje:', error);
+    return res.status(500).json({ mensaje: 'Error del servidor' });
+  }
 };
-
 // Guardar cuenta o actualizar si ya existe
 const guardarCuenta = (req, res) => {
   const { id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros } = req.body;
@@ -102,7 +149,7 @@ const guardarCuenta = (req, res) => {
       `;
       db.query(insertSQL, [id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros], (err3) => {
         if (err3) {
-          console.error('❌ Error al guardar cuenta:', err3);
+          console.error(' Error al guardar cuenta:', err3);
           return res.status(500).json({ mensaje: 'Error al guardar cuenta' });
         }
 
