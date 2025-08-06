@@ -46,3 +46,20 @@ exports.obtenerResumenCuenta = (req, res) => {
     });
   });
 };
+
+// ✅ PUT: actualizar cuenta
+router.put('/:id', (req, res) => {
+  const { gasolina, casetas, otros, descripcion_otros } = req.body;
+  const { id } = req.params;
+
+  const sql = `UPDATE cuentas_viaje SET gasolina = ?, casetas = ?, otros = ?, descripcion_otros = ? WHERE id = ?`;
+  const values = [gasolina, casetas, otros, descripcion_otros, id];
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error('❌ Error al actualizar cuenta:', err);
+      return res.status(500).json({ message: 'Error interno' });
+    }
+    res.json({ message: 'Cuenta actualizada' });
+  });
+});
