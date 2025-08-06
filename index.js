@@ -1,5 +1,6 @@
 require('dotenv').config();
 require('./cron/finalizarViajes');
+require('./cron/notifications');
 const express = require('express');
 const cors = require('cors');
 const ipWhitelist = require('./src/middlewares/ipWhitelist');
