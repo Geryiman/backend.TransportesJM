@@ -8,7 +8,7 @@ const cuentasController = require('../controllers/cuentasConductor.controller');
 // Las funciones deben existir en el controlador
 router.post('/', cuentasController.crearCuentaConductor);
 router.get('/:id_viaje', cuentasController.obtenerCuentaConductor);
-router.get('/cuentas/viaje/:id', cuentasController.obtenerCuentaPorViaje);
+router.get('/viaje/:id', cuentasController.obtenerCuentaPorViaje);
 router.post('/cuentas/guardar', cuentasController.guardarCuenta);
 
 
