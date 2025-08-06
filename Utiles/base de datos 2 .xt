@@ -175,3 +175,12 @@ ADD COLUMN monto_transferencia DECIMAL(10,2) DEFAULT 0;
     ->   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ->   FOREIGN KEY (id_viaje) REFERENCES viajes(id) ON DELETE CASCADE
     -> );
+    ALTER TABLE unidades_viaje
+ADD COLUMN notificado BOOLEAN DEFAULT FALSE;
+ALTER TABLE reservas
+ADD COLUMN notificado BOOLEAN DEFAULT FALSE;
+ALTER TABLE usuarios
+ADD COLUMN token_notificacion TEXT;
+
+ALTER TABLE administradores
+ADD COLUMN token_notificacion TEXT;
