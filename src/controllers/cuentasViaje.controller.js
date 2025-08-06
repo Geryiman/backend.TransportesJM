@@ -1,65 +1,72 @@
 const db = require('../config/db');
-
-exports.obtenerResumenCuenta = (req, res) => {
+// Obtener resumen del viaje
+exports.obtenerResumen = (req, res) => {
   const { id_viaje } = req.params;
 
   const sql = `
-    SELECT r.metodo_pago, COUNT(*) AS total_reservas, v.precio
-    FROM reservas r
-    JOIN unidades_viaje uv ON r.id_unidad_viaje = uv.id
-    JOIN viajes v ON uv.id_viaje = v.id
-    WHERE uv.id_viaje = ? AND r.estado = 'confirmada' AND r.metodo_pago = 'efectivo'
-    GROUP BY r.metodo_pago, v.precio
+    SELECT
+      COUNT(*) AS totalPasajeros,
+      SUM(CASE WHEN metodo_pago = 'efectivo' THEN monto_efectivo ELSE 0 END) AS totalEfectivo,
+      SUM(CASE WHEN metodo_pago = 'transferencia' THEN monto_transferencia ELSE 0 END) AS totalTransferencia,
+      SUM(monto_efectivo + monto_transferencia) AS totalGenerado
+    FROM reservas
+    WHERE id_unidad_viaje IN (
+      SELECT id FROM unidades_viaje WHERE id_viaje = ?
+    ) AND estado = 'confirmada'
   `;
 
-  const sqlGastos = `SELECT * FROM cuentas_viaje WHERE id_viaje = ? LIMIT 1`;
-
-  db.query(sql, [id_viaje], (err, reservas) => {
+  db.query(sql, [id_viaje], (err, result) => {
     if (err) {
-      console.error('❌ Error al obtener reservas:', err);
-      return res.status(500).json({ message: 'Error al obtener reservas' });
+      console.error('❌ Error al obtener resumen:', err);
+      return res.status(500).json({ message: 'Error al obtener resumen' });
     }
 
-    db.query(sqlGastos, [id_viaje], (err2, cuentas) => {
+    const resumen = result[0];
+    const sqlGastos = `SELECT * FROM cuentas_viaje WHERE id_viaje = ? LIMIT 1`;
+
+    db.query(sqlGastos, [id_viaje], (err2, result2) => {
       if (err2) {
-        console.error('❌ Error al obtener cuenta del viaje:', err2);
-        return res.status(500).json({ message: 'Error al obtener cuenta del viaje' });
+        console.error('❌ Error al obtener gastos:', err2);
+        return res.status(500).json({ message: 'Error al obtener gastos' });
       }
 
-      const totalPasajeros = reservas.length > 0 ? reservas[0].total_reservas : 0;
-      const precioPorPasajero = reservas.length > 0 ? reservas[0].precio : 0;
-
-      const totalEfectivo = totalPasajeros * precioPorPasajero;
-      const totalTransferencia = 0; // NO se cuentan transferencias
-      const totalGenerado = totalEfectivo;
-      const totalGastos = cuentas.length > 0 ? (cuentas[0].gasolina + cuentas[0].casetas + cuentas[0].otros) : 0;
-      const pendienteEntregar = totalGenerado - totalGastos;
+      const gastos = result2[0] || { gasolina: 0, casetas: 0, otros: 0 };
+      const totalGastos = gastos.gasolina + gastos.casetas + gastos.otros;
+      const pendienteEntregar = resumen.totalEfectivo - totalGastos;
 
       res.json({
-        totalPasajeros,
-        totalEfectivo,
-        totalTransferencia,
-        totalGenerado,
+        totalPasajeros: resumen.totalPasajeros,
+        totalEfectivo: resumen.totalEfectivo,
+        totalTransferencia: resumen.totalTransferencia,
+        totalGenerado: resumen.totalGenerado,
         totalGastos,
-        pendienteEntregar
+        pendienteEntregar,
       });
     });
   });
 };
 
-// ✅ PUT: actualizar cuenta
-router.put('/:id', (req, res) => {
+// Guardar cuenta del viaje
+exports.guardarCuenta = (req, res) => {
+  const { id_viaje } = req.params;
   const { gasolina, casetas, otros, descripcion_otros } = req.body;
-  const { id } = req.params;
 
-  const sql = `UPDATE cuentas_viaje SET gasolina = ?, casetas = ?, otros = ?, descripcion_otros = ? WHERE id = ?`;
-  const values = [gasolina, casetas, otros, descripcion_otros, id];
+  const sql = `
+    INSERT INTO cuentas_viaje (id_viaje, gasolina, casetas, otros, descripcion_otros)
+    VALUES (?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+    gasolina = VALUES(gasolina),
+    casetas = VALUES(casetas),
+    otros = VALUES(otros),
+    descripcion_otros = VALUES(descripcion_otros)
+  `;
 
-  db.query(sql, values, (err, result) => {
+  db.query(sql, [id_viaje, gasolina, casetas, otros, descripcion_otros], (err, result) => {
     if (err) {
-      console.error('❌ Error al actualizar cuenta:', err);
-      return res.status(500).json({ message: 'Error interno' });
+      console.error('❌ Error al guardar cuenta del viaje:', err);
+      return res.status(500).json({ message: 'Error al guardar cuenta' });
     }
-    res.json({ message: 'Cuenta actualizada' });
+
+    res.json({ message: '✅ Cuenta del viaje guardada correctamente' });
   });
-});
+};
