@@ -488,13 +488,22 @@ exports.confirmarReserva = (req, res) => {
 // Rechazar reserva
 exports.rechazarReserva = (req, res) => {
   const { id } = req.params;
-  const sql = 'UPDATE reservas SET estado = "rechazada" WHERE id = ?';
 
+  const sql = "DELETE FROM reservas WHERE id = ? AND estado = 'pendiente'";
   db.query(sql, [id], (err, result) => {
-    if (err) return res.status(500).json({ error: 'Error al rechazar reserva' });
-    res.json({ message: 'Reserva rechazada' });
+    if (err) {
+      console.error('❌ Error al eliminar reserva:', err);
+      return res.status(500).json({ message: 'Error al eliminar reserva' });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Reserva no encontrada o ya procesada' });
+    }
+
+    res.json({ message: '✅ Reserva eliminada correctamente' });
   });
 };
+
 
 // Obtener reservas pendientes filtradas por nombre o teléfono del usuario
 exports.obtenerReservasPendientesFiltradas = (req, res) => {

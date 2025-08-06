@@ -20,7 +20,7 @@ router.delete('/delete-admin/:id', verifyAdminToken, adminController.deleteAdmin
 
 // Solicitudes de reservas pendientes
 router.put('/reservas/:id/confirmar', verifyAdminToken,viajesController.confirmarReserva);
-router.put('/reservas/:id/rechazar',verifyAdminToken, viajesController.rechazarReserva);
+router.delete('/reservas/:id/rechazar',verifyAdminToken, viajesController.rechazarReserva);
 router.get('/reservas/pendientes', viajesController.obtenerReservasPendientesFiltradas);
 router.get('/reservas', viajesController.obtenerReservasPorEstado);
 router.get('/reservas/fecha', viajesController.obtenerReservasPorRango);
