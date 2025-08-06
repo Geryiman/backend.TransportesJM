@@ -18,5 +18,7 @@ router.post('/cuentas/guardar', conductorController.guardarCuentaConductor);
 
 router.get('/viaje/:id/cuenta', conductorController.obtenerCuentaConductor);
 
+router.put('/viaje/:id/cuenta', conductorController.actualizarCuentaViaje);
+
 
 module.exports = router;

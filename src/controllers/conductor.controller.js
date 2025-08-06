@@ -346,3 +346,36 @@ exports.obtenerCuentaConductor = (req, res) => {
     });
   });
 };
+exports.actualizarCuentaViaje = (req, res) => {
+  const { id } = req.params;
+  const { gasolina, casetas, otros_gastos } = req.body;
+
+  const sqlUpdateCuenta = `
+    UPDATE cuentas_viaje 
+    SET gasolina = ?, casetas = ?
+    WHERE id_viaje = ?
+  `;
+  db.query(sqlUpdateCuenta, [gasolina, casetas, id], (err) => {
+    if (err) return res.status(500).json({ message: 'Error al actualizar cuenta' });
+
+    const sqlDeleteOtros = `DELETE FROM otros_gastos WHERE id_viaje = ?`;
+    db.query(sqlDeleteOtros, [id], (err) => {
+      if (err) return res.status(500).json({ message: 'Error al eliminar gastos anteriores' });
+
+      if (!otros_gastos || otros_gastos.length === 0) {
+        return res.json({ message: 'Cuenta actualizada sin otros gastos' });
+      }
+
+      const sqlInsertOtros = `
+        INSERT INTO otros_gastos (id_viaje, descripcion, monto)
+        VALUES ?
+      `;
+      const values = otros_gastos.map(g => [id, g.descripcion, g.monto]);
+
+      db.query(sqlInsertOtros, [values], (err) => {
+        if (err) return res.status(500).json({ message: 'Error al insertar otros gastos' });
+        res.json({ message: 'Cuenta actualizada correctamente' });
+      });
+    });
+  });
+};
