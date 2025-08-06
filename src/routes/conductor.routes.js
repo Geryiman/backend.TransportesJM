@@ -11,4 +11,8 @@ router.get('/viaje/:id_unidad/asientos', conductorController.obtenerAsientosDelV
 // Detalle del viaje para el conductor
 router.get('/viaje/:id/detalle', conductorController.detalleViajeConductor);
 
+// Actualizar el estado de pago de una reserva
+router.put('/reservas/actualizar-pago', conductorController.actualizarMetodoPago);
+
+
 module.exports = router;

@@ -154,3 +154,7 @@ CREATE TABLE cuentas_conductor_otros (
   monto DECIMAL(10,2) NOT NULL,
   FOREIGN KEY (id_cuenta_conductor) REFERENCES cuentas_conductor(id)
 );
+
+ALTER TABLE reservas
+ADD COLUMN monto_efectivo DECIMAL(10,2) DEFAULT 0,
+ADD COLUMN monto_transferencia DECIMAL(10,2) DEFAULT 0;

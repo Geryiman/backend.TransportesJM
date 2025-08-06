@@ -31,7 +31,7 @@ exports.obtenerViajesAsignados = (req, res) => {
   });
 };
 
-// 👥 Obtener asientos ocupados y pasajeros
+// Obtener asientos ocupados y pasajeros
 exports.obtenerAsientosDelViaje = (req, res) => {
   const { id_unidad } = req.params;
 
@@ -99,7 +99,7 @@ exports.detalleViajeConductor = (req, res) => {
 
     db.query(estructuraSql, [id], (err, estructura) => {
       if (err) {
-        console.error('❌ Error al obtener estructura:', err);
+        console.error('Error al obtener estructura:', err);
         return res.status(500).json({ error: 'Error al obtener estructura de asientos' });
       }
 
@@ -118,7 +118,7 @@ exports.detalleViajeConductor = (req, res) => {
 
       db.query(reservasSql, [viaje.id_unidad_viaje], (err, reservasRaw) => {
         if (err) {
-          console.error('❌ Error al obtener reservas:', err);
+          console.error('Error al obtener reservas:', err);
           return res.status(500).json({ error: 'Error al obtener reservas' });
         }
 
@@ -147,3 +147,37 @@ exports.detalleViajeConductor = (req, res) => {
     });
   });
 };
+
+exports.actualizarMetodoPago = (req, res) => {
+  const { ids, metodo_pago, monto_efectivo = 0, monto_transferencia = 0 } = req.body;
+
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ message: 'Lista de IDs inválida' });
+  }
+
+  if (!['efectivo', 'transferencia', 'mixto'].includes(metodo_pago)) {
+    return res.status(400).json({ message: 'Método de pago inválido' });
+  }
+
+  if (metodo_pago === 'mixto' && (monto_efectivo + monto_transferencia <= 0)) {
+    return res.status(400).json({ message: 'Debes especificar los montos si es mixto' });
+  }
+
+  const placeholders = ids.map(() => '?').join(',');
+  const sql = `
+    UPDATE reservas 
+    SET metodo_pago = ?, pago_confirmado = 1,
+        monto_efectivo = ?, monto_transferencia = ?
+    WHERE id IN (${placeholders})
+  `;
+
+  db.query(sql, [metodo_pago, monto_efectivo, monto_transferencia, ...ids], (err, result) => {
+    if (err) {
+      console.error('Error al actualizar método de pago:', err);
+      return res.status(500).json({ message: 'Error interno del servidor' });
+    }
+
+    return res.json({ message: 'Método de pago actualizado', result });
+  });
+};
+
