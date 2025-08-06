@@ -89,3 +89,4 @@ exports.obtenerPrecioViaje = (req, res) => {
     return res.json({ precio: result[0].precio });
   });
 };
+
