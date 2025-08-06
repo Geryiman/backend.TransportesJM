@@ -40,8 +40,81 @@ const obtenerCuentaConductor = (req, res) => {
     res.json(results[0]);
   });
 };
+const obtenerCuentaPorViaje = (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+    SELECT * FROM cuentas_conductor
+    WHERE id_viaje = ?
+  `;
+
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error('❌ Error al obtener cuenta:', err);
+      return res.status(500).json({ mensaje: 'Error al obtener cuenta' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ mensaje: 'No hay cuenta registrada para este viaje' });
+    }
+
+    res.json(results[0]);
+  });
+};
+
+// Guardar cuenta o actualizar si ya existe
+const guardarCuenta = (req, res) => {
+  const { id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros } = req.body;
+
+  // Verificar si ya existe una cuenta para ese viaje
+  const verificarSQL = `
+    SELECT * FROM cuentas_conductor WHERE id_viaje = ?
+  `;
+
+  db.query(verificarSQL, [id_viaje], (err, results) => {
+    if (err) {
+      console.error('❌ Error al verificar cuenta:', err);
+      return res.status(500).json({ mensaje: 'Error al verificar cuenta' });
+    }
+
+    if (results.length > 0) {
+      // Ya existe, hacer UPDATE
+      const updateSQL = `
+        UPDATE cuentas_conductor
+        SET gasolina = ?, casetas = ?, otros = ?, descripcion_otros = ?
+        WHERE id_viaje = ?
+      `;
+      db.query(updateSQL, [gasolina, casetas, otros, descripcion_otros, id_viaje], (err2) => {
+        if (err2) {
+          console.error('❌ Error al actualizar cuenta:', err2);
+          return res.status(500).json({ mensaje: 'Error al actualizar cuenta' });
+        }
+
+        res.json({ mensaje: 'Cuenta actualizada correctamente' });
+      });
+
+    } else {
+      // No existe, hacer INSERT
+      const insertSQL = `
+        INSERT INTO cuentas_conductor
+        (id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+      db.query(insertSQL, [id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros], (err3) => {
+        if (err3) {
+          console.error('❌ Error al guardar cuenta:', err3);
+          return res.status(500).json({ mensaje: 'Error al guardar cuenta' });
+        }
+
+        res.json({ mensaje: 'Cuenta registrada correctamente' });
+      });
+    }
+  });
+};
 
 module.exports = {
   crearCuentaConductor,
-  obtenerCuentaConductor
+  obtenerCuentaConductor,
+    obtenerCuentaPorViaje,
+  guardarCuenta,
 };
