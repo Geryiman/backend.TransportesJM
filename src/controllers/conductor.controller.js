@@ -268,3 +268,81 @@ exports.guardarCuentaConductor = (req, res) => {
   });
 };
 
+exports.obtenerCuentaConductor = (req, res) => {
+  const idViaje = req.params.id;
+
+  // 1. Obtener el viaje
+  const sqlViaje = `
+    SELECT v.*, pu.nombre AS nombre_plantilla
+    FROM viajes v
+    LEFT JOIN unidades_viaje uv ON uv.id_viaje = v.id
+    LEFT JOIN plantillas_unidad pu ON uv.id_plantilla = pu.id
+    WHERE v.id = ?
+    LIMIT 1
+  `;
+
+  db.query(sqlViaje, [idViaje], (err, viajeResult) => {
+    if (err || viajeResult.length === 0) {
+      console.error('❌ Error al obtener viaje:', err);
+      return res.status(500).json({ message: 'Error al obtener viaje' });
+    }
+
+    const viaje = viajeResult[0];
+
+    // 2. Obtener reservas confirmadas
+    const sqlReservas = `
+      SELECT id, asiento, nombre_viajero, metodo_pago, monto_efectivo, monto_transferencia, estado
+      FROM reservas
+      WHERE estado = 'confirmada' AND id_unidad_viaje IN (
+        SELECT id FROM unidades_viaje WHERE id_viaje = ?
+      )
+    `;
+
+    db.query(sqlReservas, [idViaje], (err, reservas) => {
+      if (err) {
+        console.error('❌ Error al obtener reservas:', err);
+        return res.status(500).json({ message: 'Error al obtener reservas' });
+      }
+
+      // 3. Obtener cuenta del conductor (si existe)
+      const sqlCuenta = `
+        SELECT * FROM cuentas_conductor WHERE id_viaje = ? LIMIT 1
+      `;
+
+      db.query(sqlCuenta, [idViaje], (err, cuentaResult) => {
+        if (err) {
+          console.error('❌ Error al obtener cuenta del conductor:', err);
+          return res.status(500).json({ message: 'Error al obtener cuenta' });
+        }
+
+        const cuenta = cuentaResult[0] || null;
+
+        if (!cuenta) {
+          // no hay cuenta previa
+          return res.json({ viaje, reservas, cuenta: null, otros: [] });
+        }
+
+        // 4. Obtener otros gastos (si hay)
+        const sqlOtros = `
+          SELECT descripcion, monto
+          FROM cuentas_conductor_otros
+          WHERE id_cuenta_conductor = ?
+        `;
+
+        db.query(sqlOtros, [cuenta.id], (err, otrosResult) => {
+          if (err) {
+            console.error('❌ Error al obtener otros gastos:', err);
+            return res.status(500).json({ message: 'Error al obtener otros gastos' });
+          }
+
+          return res.json({
+            viaje,
+            reservas,
+            cuenta,
+            otros: otrosResult
+          });
+        });
+      });
+    });
+  });
+};

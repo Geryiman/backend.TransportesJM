@@ -16,4 +16,7 @@ router.put('/reservas/actualizar-pago', conductorController.actualizarMetodoPago
 
 router.post('/cuentas/guardar', conductorController.guardarCuentaConductor);
 
+router.get('/viaje/:id/cuenta', conductorController.obtenerCuentaConductor);
+
+
 module.exports = router;
