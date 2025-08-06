@@ -112,51 +112,103 @@ const obtenerCuentaPorViaje = async (req, res) => {
 };
 
 // Guardar o actualizar gastos del viaje
-const guardarCuenta = (req, res) => {
+const guardarCuenta = async (req, res) => {
   const { id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros } = req.body;
 
-  const verificarSQL = `SELECT * FROM cuentas_conductor WHERE id_viaje = ?`;
+  try {
+    // Calcular total de pasajeros confirmados para este viaje
+    const [resPasajeros] = await db.promise().query(`
+      SELECT COUNT(*) AS total
+      FROM reservas
+      WHERE estado = 'confirmada'
+        AND id_unidad_viaje IN (
+          SELECT id FROM unidades_viaje WHERE id_viaje = ?
+        )
+    `, [id_viaje]);
 
-  db.query(verificarSQL, [id_viaje], (err, results) => {
-    if (err) {
-      console.error('❌ Error al verificar cuenta:', err);
-      return res.status(500).json({ mensaje: 'Error al verificar cuenta' });
-    }
+    const total_pasajeros = resPasajeros[0].total;
 
-    if (results.length > 0) {
-      // Actualizar si ya existe
-      const updateSQL = `
+    // Obtener precio del viaje
+    const [resPrecio] = await db.promise().query('SELECT precio FROM viajes WHERE id = ?', [id_viaje]);
+    const precio = resPrecio.length > 0 ? parseFloat(resPrecio[0].precio) : 0;
+
+    const total_efectivo = total_pasajeros * precio;
+    const total_transferencia = 0; // Puedes ajustar si luego manejas transferencias
+    const total_pendiente_entregar = 0;
+
+    const total_gastos = parseFloat(gasolina) + parseFloat(casetas) + parseFloat(otros);
+    const total_generado = total_efectivo + total_transferencia - total_gastos;
+
+    // Verificar si ya existe una cuenta
+    const [existeCuenta] = await db.promise().query('SELECT * FROM cuentas_conductor WHERE id_viaje = ?', [id_viaje]);
+
+    if (existeCuenta.length > 0) {
+      // Actualizar cuenta existente
+      await db.promise().query(`
         UPDATE cuentas_conductor
-        SET gasolina = ?, casetas = ?, otros = ?, descripcion_otros = ?
+        SET 
+          id_conductor = ?, 
+          gasolina = ?, 
+          casetas = ?, 
+          otros = ?, 
+          descripcion_otros = ?,
+          total_pasajeros = ?,
+          total_efectivo = ?,
+          total_transferencia = ?,
+          total_pendiente_entregar = ?,
+          total_gastos = ?,
+          total_generado = ?
         WHERE id_viaje = ?
-      `;
-      db.query(updateSQL, [gasolina, casetas, otros, descripcion_otros, id_viaje], (err2) => {
-        if (err2) {
-          console.error('❌ Error al actualizar cuenta:', err2);
-          return res.status(500).json({ mensaje: 'Error al actualizar cuenta' });
-        }
+      `, [
+        id_conductor,
+        gasolina,
+        casetas,
+        otros,
+        descripcion_otros,
+        total_pasajeros,
+        total_efectivo,
+        total_transferencia,
+        total_pendiente_entregar,
+        total_gastos,
+        total_generado,
+        id_viaje
+      ]);
 
-        res.json({ mensaje: 'Cuenta actualizada correctamente' });
-      });
+      return res.json({ mensaje: 'Cuenta actualizada correctamente' });
 
     } else {
-      // Insertar si no existe
-      const insertSQL = `
-        INSERT INTO cuentas_conductor
-        (id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
-      db.query(insertSQL, [id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros], (err3) => {
-        if (err3) {
-          console.error(' Error al guardar cuenta:', err3);
-          return res.status(500).json({ mensaje: 'Error al guardar cuenta' });
-        }
+      // Crear nueva cuenta
+      await db.promise().query(`
+        INSERT INTO cuentas_conductor (
+          id_viaje, id_conductor, gasolina, casetas, otros, descripcion_otros,
+          total_pasajeros, total_efectivo, total_transferencia, total_pendiente_entregar,
+          total_gastos, total_generado
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        id_viaje,
+        id_conductor,
+        gasolina,
+        casetas,
+        otros,
+        descripcion_otros,
+        total_pasajeros,
+        total_efectivo,
+        total_transferencia,
+        total_pendiente_entregar,
+        total_gastos,
+        total_generado
+      ]);
 
-        res.json({ mensaje: 'Cuenta registrada correctamente' });
-      });
+      return res.json({ mensaje: 'Cuenta registrada correctamente' });
     }
-  });
+
+  } catch (error) {
+    console.error('❌ Error al guardar o actualizar cuenta:', error);
+    return res.status(500).json({ mensaje: 'Error del servidor al guardar la cuenta' });
+  }
 };
+
 
 module.exports = {
   crearCuentaConductor,
