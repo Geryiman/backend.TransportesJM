@@ -4,22 +4,23 @@ const db = require('../config/db');
 exports.obtenerViajesAsignados = (req, res) => {
   const { id } = req.params;
 
-  const sql = `
-    SELECT 
-      v.id AS id_viaje,
-      v.origen,
-      v.destino,
-      v.fecha,
-      v.hora,
-      v.precio,
-      v.estado,
-      uv.numero_unidad,
-      uv.id AS id_unidad_viaje
-    FROM viajes v
-    JOIN unidades_viaje uv ON v.id = uv.id_viaje
-    WHERE uv.id_conductor = ?
-    ORDER BY v.fecha ASC, v.hora ASC
-  `;
+ const sql = `
+  SELECT 
+    v.id AS id_viaje,
+    v.origen,
+    v.destino,
+    v.fecha,
+    v.hora,
+    v.precio,
+    v.estado,
+    uv.id AS id_unidad_viaje,
+    pu.nombre AS nombre_plantilla
+  FROM viajes v
+  JOIN unidades_viaje uv ON v.id = uv.id_viaje
+  JOIN plantillas_unidad pu ON uv.id_plantilla = pu.id
+  WHERE uv.id_conductor = ?
+  ORDER BY v.fecha ASC, v.hora ASC
+`;
 
   db.query(sql, [id], (err, results) => {
     if (err) {
