@@ -1,6 +1,8 @@
 const allowedIPs = [
          // Tu IP de pruebas (Postman, personal)
-  '167.172.142.206',           // IP del servidor
+  '167.172.142.206',  
+  "205.164.182.149"
+           // IP del servidor
   // Puedes agregar más aquí 
 ];
 
