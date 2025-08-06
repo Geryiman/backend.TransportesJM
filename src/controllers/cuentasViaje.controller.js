@@ -5,18 +5,20 @@ exports.getResumenCuentaViaje = (req, res) => {
 
   const sql = `
     SELECT
-      COUNT(r.id) AS totalPasajeros,
-      SUM(CASE WHEN r.metodo_pago = 'efectivo' THEN 1 ELSE 0 END) AS totalEfectivoPasajeros,
-      SUM(CASE WHEN r.metodo_pago = 'transferencia' THEN 1 ELSE 0 END) AS totalTransferenciaPasajeros,
-      v.precio * SUM(CASE WHEN r.metodo_pago = 'efectivo' THEN 1 ELSE 0 END) AS totalGenerado,
-      (cv.gasolina + cv.casetas + cv.otros) AS totalGastos,
-      (v.precio * SUM(CASE WHEN r.metodo_pago = 'efectivo' THEN 1 ELSE 0 END)) -
-      (cv.gasolina + cv.casetas + cv.otros) AS pendienteEntregar
-    FROM reservas r
-    JOIN unidades_viaje uv ON r.id_unidad_viaje = uv.id
-    JOIN viajes v ON uv.id_viaje = v.id
-    JOIN cuentas_viaje cv ON cv.id_viaje = v.id AND cv.id_conductor = uv.id_conductor
-    WHERE v.id = ? AND r.estado = 'confirmada';
+  COUNT(r.id) AS totalPasajeros,
+  SUM(CASE WHEN r.metodo_pago = 'efectivo' THEN 1 ELSE 0 END) AS totalEfectivoPasajeros,
+  SUM(CASE WHEN r.metodo_pago = 'transferencia' THEN 1 ELSE 0 END) AS totalTransferenciaPasajeros,
+  v.precio * SUM(CASE WHEN r.metodo_pago = 'efectivo' THEN 1 ELSE 0 END) AS totalGenerado,
+  (MAX(cv.gasolina) + MAX(cv.casetas) + MAX(cv.otros)) AS totalGastos,
+  (v.precio * SUM(CASE WHEN r.metodo_pago = 'efectivo' THEN 1 ELSE 0 END)) -
+  (MAX(cv.gasolina) + MAX(cv.casetas) + MAX(cv.otros)) AS pendienteEntregar
+FROM reservas r
+JOIN unidades_viaje uv ON r.id_unidad_viaje = uv.id
+JOIN viajes v ON uv.id_viaje = v.id
+JOIN cuentas_viaje cv ON cv.id_viaje = v.id AND cv.id_conductor = uv.id_conductor
+WHERE v.id = ?
+  AND r.estado = 'confirmada';
+
   `;
 
   db.query(sql, [id], (err, result) => {
