@@ -10,6 +10,7 @@ const paradasRoutes = require('./src/routes/paradas.routes');
 const viajeRegistroRoutes = require('./src/routes/viajeRegistro.route');
 const viajesDetalleRoutes = require('./src/routes/viajesDetalle.route');
 const reservasRoutes = require('./src/routes/reservas.routes');
+const conductorRoutes = require('./src/routes/conductor.routes');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api/paradas', paradasRoutes);
 app.use('/api/viaje-registro', viajeRegistroRoutes);
 app.use('/api/viajes-detalle', viajesDetalleRoutes);
 app.use('/api/reservas', reservasRoutes);
+app.use('/api/conductor', conductorRoutes);
 app.use('/api/pagos', require('./src/routes/pagos.routes'));
 
 
