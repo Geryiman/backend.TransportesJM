@@ -1,6 +1,6 @@
 const db = require('../config/db'); 
 
-// 🚍 Obtener todos los viajes asignados a un conductor
+// Obtener todos los viajes asignados a un conductor
 exports.obtenerViajesAsignados = (req, res) => {
   const { id } = req.params;
 
@@ -24,7 +24,7 @@ exports.obtenerViajesAsignados = (req, res) => {
 
   db.query(sql, [id], (err, results) => {
     if (err) {
-      console.error('❌ Error al obtener viajes del conductor:', err);
+      console.error(' Error al obtener viajes del conductor:', err);
       return res.status(500).json({ error: 'Error del servidor' });
     }
     res.json(results);
@@ -49,9 +49,101 @@ exports.obtenerAsientosDelViaje = (req, res) => {
 
   db.query(sql, [id_unidad], (err, results) => {
     if (err) {
-      console.error('❌ Error al obtener asientos:', err);
+      console.error('Error al obtener asientos:', err);
       return res.status(500).json({ error: 'Error del servidor' });
     }
     res.json(results);
+  });
+};
+
+// Obtener detalle completo de un viaje del conductor
+exports.detalleViajeConductor = (req, res) => {
+  const { id } = req.params; // id_viaje
+
+  // Primero obtener info general del viaje + plantilla usada
+  const viajeSql = `
+    SELECT 
+      v.id AS id_viaje,
+      v.origen,
+      v.destino,
+      v.fecha,
+      v.hora,
+      pu.nombre AS nombre_plantilla,
+      uv.id AS id_unidad_viaje
+    FROM viajes v
+    JOIN unidades_viaje uv ON v.id = uv.id_viaje
+    JOIN plantillas_unidad pu ON uv.id_plantilla = pu.id
+    WHERE v.id = ?
+    LIMIT 1
+  `;
+
+  db.query(viajeSql, [id], (err, viajeResult) => {
+    if (err || viajeResult.length === 0) {
+      console.error(' Error al obtener viaje:', err);
+      return res.status(500).json({ error: 'Error al obtener el viaje' });
+    }
+
+    const viaje = viajeResult[0];
+
+    // Obtener estructura visual de la plantilla
+    const estructuraSql = `
+      SELECT fila, col, tipo, numero
+      FROM estructura_asientos
+      WHERE plantilla_id = (
+        SELECT uv.id_plantilla
+        FROM unidades_viaje uv
+        WHERE uv.id_viaje = ?
+        LIMIT 1
+      )
+    `;
+
+    db.query(estructuraSql, [id], (err, estructura) => {
+      if (err) {
+        console.error('❌ Error al obtener estructura:', err);
+        return res.status(500).json({ error: 'Error al obtener estructura de asientos' });
+      }
+
+      // Obtener reservas de ese viaje
+      const reservasSql = `
+        SELECT 
+          r.asiento,
+          r.nombre_viajero,
+          r.metodo_pago,
+          r.estado,
+          r.id_usuario
+        FROM reservas r
+        WHERE r.id_unidad_viaje = ?
+          AND r.estado = 'confirmada'
+      `;
+
+      db.query(reservasSql, [viaje.id_unidad_viaje], (err, reservasRaw) => {
+        if (err) {
+          console.error('❌ Error al obtener reservas:', err);
+          return res.status(500).json({ error: 'Error al obtener reservas' });
+        }
+
+        // Generar un "grupo" visual por usuario
+        const colores = {};
+        let grupoId = 1;
+        const reservas = reservasRaw.map(r => {
+          if (!colores[r.id_usuario]) {
+            colores[r.id_usuario] = grupoId++;
+          }
+          return {
+            asiento: r.asiento,
+            nombre_viajero: r.nombre_viajero,
+            metodo_pago: r.metodo_pago,
+            estado: r.estado,
+            grupo: colores[r.id_usuario]
+          };
+        });
+
+        return res.json({
+          viaje,
+          estructura,
+          reservas
+        });
+      });
+    });
   });
 };
