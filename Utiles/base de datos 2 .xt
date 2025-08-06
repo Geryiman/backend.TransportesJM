@@ -158,3 +158,20 @@ CREATE TABLE cuentas_conductor_otros (
 ALTER TABLE reservas
 ADD COLUMN monto_efectivo DECIMAL(10,2) DEFAULT 0,
 ADD COLUMN monto_transferencia DECIMAL(10,2) DEFAULT 0;
+ CREATE TABLE cuentas_viaje (
+    ->   id INT AUTO_INCREMENT PRIMARY KEY,
+    ->   id_viaje INT NOT NULL,
+    ->   id_conductor INT,
+    ->   gasolina DECIMAL(10,2),
+    ->   casetas DECIMAL(10,2),
+    ->   otros DECIMAL(10,2),
+    ->   descripcion_otros TEXT,
+    ->   total_pasajeros INT,
+    ->   total_efectivo DECIMAL(10,2),
+    ->   total_transferencia DECIMAL(10,2),
+    ->   total_gastos DECIMAL(10,2),
+    ->   total_generado DECIMAL(10,2),
+    ->   total_pendiente_entregar DECIMAL(10,2),
+    ->   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ->   FOREIGN KEY (id_viaje) REFERENCES viajes(id) ON DELETE CASCADE
+    -> );

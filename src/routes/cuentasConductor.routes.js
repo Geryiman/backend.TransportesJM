@@ -1,8 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const cuentasCtrl = require('../controllers/cuentasConductor.controller');
+const controller = require('../controllers/cuentasConductor.controller');
 
-router.get('/:id_viaje', cuentasCtrl.obtenerCuentaViaje);
-router.post('/guardar', cuentasCtrl.guardarCuentaViaje);
+// GET: Obtener cuenta existente por viaje
+router.get('/cuenta/:id', controller.obtenerCuentaPorViaje);
+
+// POST: Crear cuenta nueva
+router.post('/cuenta', controller.crearCuentaViaje);
+
+// PUT: Editar gastos
+router.put('/cuenta/:id', controller.actualizarGastosCuenta);
+
+// GET: Obtener precio del asiento
+router.get('/viaje/:id/precio', controller.obtenerPrecioViaje);
 
 module.exports = router;
