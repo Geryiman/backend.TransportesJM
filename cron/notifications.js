@@ -24,28 +24,4 @@ pool.getConnection((err, connection) => {
   }
 });
 
-// 🔹 Tarea programada cada 5 minutos (ajusta si quieres)
-cron.schedule('*/5 * * * *', () => {
-  console.log('Ejecutando CRON de notificaciones...');
 
-  try {
-    pool.query(
-      'SELECT * FROM notificaciones WHERE estado = "pendiente"',
-      (err, results) => {
-        if (err) {
-          console.error(' Error en consulta de notificaciones:', err.message);
-          return;
-        }
-
-        console.log(` Notificaciones pendientes: ${results.length}`);
-
-        // Aquí procesas las notificaciones (enviar push, correo, etc.)
-        results.forEach(notificacion => {
-          console.log(`- Notificación ID ${notificacion.id} para ${notificacion.usuario}`);
-        });
-      }
-    );
-  } catch (error) {
-    console.error('Error en el CRON de notificaciones:', error.message);
-  }
-});
