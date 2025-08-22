@@ -3,7 +3,10 @@ const db = require('../config/db');
 const Admin = {
   findByUsername: (username, callback) => {
     db.query('SELECT * FROM administradores WHERE username = ?', [username], (err, results) => {
-      callback(err, results);
+      if (err) { 
+        return callback(err, []);
+      }
+      callback(null, results || []);
     });
   },
 
@@ -18,3 +21,4 @@ const Admin = {
 };
 
 module.exports = Admin;
+
