@@ -46,11 +46,6 @@ app.get('/', (req, res) => {
 });
 
 
-setTimeout(() => {
-  throw new Error("🔥 Error de prueba forzado");
-}, 5000);
-
-
 
 const PORT = process.env.PORT || 3000;
 console.log("servidor en el puerto 3000");
