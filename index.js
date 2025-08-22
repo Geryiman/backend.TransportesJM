@@ -45,6 +45,13 @@ app.get('/', (req, res) => {
   res.send('Bienvenido a la API de Transportes JM relizada por German Yair suerte en tu viaje, jaja');
 });
 
+
+setTimeout(() => {
+  throw new Error("🔥 Error de prueba forzado");
+}, 5000);
+
+
+
 const PORT = process.env.PORT || 3000;
 console.log("servidor en el puerto 3000");
 app.listen(PORT, '0.0.0.0', () => console.log(`✅ Servidor escuchando en http://0.0.0.0:${PORT}`));
